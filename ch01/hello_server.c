@@ -23,8 +23,8 @@ int main(int argc, char *argv[])
         exit(1);
     }
     //调用 socket 函数创建套接字
-    serv_sock = socket(PF_INET, SOCK_STREAM, 0); //调用socket函数创建套接字
-    if (serv_sock != -1)
+    serv_sock = socket(PF_INET, SOCK_STREAM, 0);
+    if (serv_sock == -1)
         error_handling("socket() error");
 
     memset(&serv_addr, 0, sizeof(serv_addr));
