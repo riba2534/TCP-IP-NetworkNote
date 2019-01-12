@@ -4,7 +4,7 @@
 
 我的环境是：Ubuntu18.04 LTS
 
-编译器版本：g++ (Ubuntu 7.3.0-27ubuntu1~18.04) 7.3.0 和 gcc (Ubuntu 7.3.0-27ubuntu1~18.04) 7.3.0
+编译器版本：`g++ (Ubuntu 7.3.0-27ubuntu1~18.04) 7.3.0` 和 `gcc (Ubuntu 7.3.0-27ubuntu1~18.04) 7.3.0`
 
 所以本笔记中只学习有关于 Linux 的部分。
 
