@@ -2,6 +2,12 @@
 
 此仓库是我的《TCP/IP网络编程》学习笔记及具体代码实现，代码部分请参考本仓库对应章节文件夹下的代码。
 
+我的环境是：Ubuntu18.04 LTS
+
+编译器版本：g++ (Ubuntu 7.3.0-27ubuntu1~18.04) 7.3.0 和 gcc (Ubuntu 7.3.0-27ubuntu1~18.04) 7.3.0
+
+所以本笔记中只学习有关于 Linux 的部分。
+
 ## 第一章：理解网络编程和套接字
 
 ### 1.1 理解网络编程和套接字
@@ -113,4 +119,119 @@ gcc hello_client.c -o hclient
 ### 1.2 基于 Linux 的文件操作
 
 讨论套接字的过程中突然谈及文件也许有些奇怪。但是对于 Linux 而言，socket 操作与文件操作没有区别，因而有必要详细了解文件。在 Linux 世界里，socket 也被认为是文件的一种，因此在网络数据传输过程中自然可以使用 I/O 的相关函数。Windows 与 Linux 不同，是要区分 socket 和文件的。因此在 Windows 中需要调用特殊的数据传输相关函数。
+
+#### 1.2.1 底层访问和文件描述符
+
+分配给标准输入输出及标准错误的文件描述符。
+
+| 文件描述符 |           对象            |
+| :--------: | :-----------------------: |
+|     0      | 标准输入：Standard Input  |
+|     1      | 标准输出：Standard Output |
+|     2      | 标准错误：Standard Error  |
+
+文件和套接字一般经过创建过程才会被分配文件描述符。
+
+文件描述符也被称为「文件句柄」，但是「句柄」主要是 Windows 中的术语。因此，在本书中如果设计 Windows 平台将使用「句柄」，如果是 Linux 将使用「描述符」。
+
+#### 1.2.2 打开文件:
+
+```c
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+int open(const char *path, int flag);
+/*
+成功时返回文件描述符，失败时返回-1
+path : 文件名的字符串地址
+flag : 文件打开模式信息
+*/
+```
+
+文件打开模式如下表：
+
+| 打开模式 |            含义            |
+| :------: | :------------------------: |
+| O_CREAT  |       必要时创建文件       |
+| O_TRUNC  |      删除全部现有数据      |
+| O_APPEND | 维持现有数据，保存到其后面 |
+| O_RDONLY |          只读打开          |
+| O_WRONLY |          只写打开          |
+|  O_RDWR  |          读写打开          |
+
+#### 1.2.3 关闭文件：
+
+```c
+#include <unistd.h>
+int close(int fd);
+/*
+成功时返回 0 ，失败时返回 -1
+fd : 需要关闭的文件或套接字的文件描述符
+*/
+```
+
+若调用此函数同时传递文件描述符参数，则关闭（终止）响应文件。另外需要注意的是，此函数不仅可以关闭文件，还可以关闭套接字。再次证明了「Linux 操作系统不区分文件与套接字」的特点。
+
+#### 1.2.4 将数据写入文件：
+
+```c
+#include <unistd.h>
+ssize_t write(int fd, const void *buf, size_t nbytes);
+/*
+成功时返回写入的字节数 ，失败时返回 -1
+fd : 显示数据传输对象的文件描述符
+buf : 保存要传输数据的缓冲值地址
+nbytes : 要传输数据的字节数
+*/
+```
+
+在此函数的定义中，size_t 是通过 typedef 声明的 unsigned int 类型。对 ssize_t 来说，ssize_t 前面多加的 s 代表 signed ，即 ssize_t 是通过 typedef 声明的 signed int 类型。
+
+创建新文件并保存数据：
+
+代码见：[low_open.c](ch01/low_open.c)
+
+编译运行：
+
+```shell
+gcc low_open.c -o lopen
+./lopen
+```
+
+然后会生成一个`data.txt`的文件，里面有`Let's go!`
+
+#### 1.2.5 读取文件中的数据：
+
+与之前的`write()`函数相对应，`read()`用来输入（接收）数据。
+
+```c
+#include <unistd.h>
+ssize_t read(int fd, void *buf, size_t nbytes);
+/*
+成功时返回接收的字节数（但遇到文件结尾则返回 0），失败时返回 -1
+fd : 显示数据接收对象的文件描述符
+buf : 要保存接收的数据的缓冲地址值。
+nbytes : 要接收数据的最大字节数
+*/
+```
+
+下面示例通过 read() 函数读取 data.txt 中保存的数据。
+
+代码见：[low_read.c](ch01/low_read.c)
+
+编译运行：
+
+```shell
+gcc low_read.c -o lread
+./lread
+```
+
+在上一步的 data.txt 文件与没有删的情况下，会输出：
+
+```
+file descriptor: 3
+file data: Let's go!
+```
+
+关于文件描述符的 I/O 操作到此结束，要明白，这些内容同样适合于套接字。
 
