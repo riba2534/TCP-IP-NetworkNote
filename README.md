@@ -812,7 +812,74 @@ Network ordered integer addr: 0x4f7ce87f
 
 可以看出，已经成功的把转换后的地址放进了 addr_inet.sin_addr.s_addr 中。
 
-还有一个函数，与 inet_aton() 正好相反。
+还有一个函数，与 inet_aton() 正好相反，它可以把网络字节序整数型IP地址转换成我们熟悉的字符串形式，函数原型如下：
+
+```c
+#include <arpa/inet.h>
+char *inet_ntoa(struct in_addr adr);
+```
+
+该函数将通过参数传入的整数型IP地址转换为字符串格式并返回。但要小心，返回值为 char 指针，返回字符串地址意味着字符串已经保存在内存空间，但是该函数未向程序员要求分配内存，而是再内部申请了内存保存了字符串。也就是说调用了该函数候要立即把信息复制到其他内存空间。因此，若再次调用 inet_ntoa 函数，则有可能覆盖之前保存的字符串信息。总之，再次调用 inet_ntoa 函数前返回的字符串地址是有效的。若需要长期保存，则应该将字符串复制到其他内存空间。
+
+示例：
+
+[inet_ntoa.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch03/inet_ntoa.c)
+
+```c
+#include <stdio.h>
+#include <string.h>
+#include <arpa/inet.h>
+
+int main(int argc, char *argv[])
+{
+    struct sockaddr_in addr1, addr2;
+    char *str_ptr;
+    char str_arr[20];
+
+    addr1.sin_addr.s_addr = htonl(0x1020304);
+    addr2.sin_addr.s_addr = htonl(0x1010101);
+    //把addr1中的结构体信息转换为字符串的IP地址形式
+    str_ptr = inet_ntoa(addr1.sin_addr);
+    strcpy(str_arr, str_ptr);
+    printf("Dotted-Decimal notation1: %s \n", str_ptr);
+
+    inet_ntoa(addr2.sin_addr);
+    printf("Dotted-Decimal notation2: %s \n", str_ptr);
+    printf("Dotted-Decimal notation3: %s \n", str_arr);
+    return 0;
+}
+```
+
+编译运行：
+
+```shell
+gcc inet_ntoa.c -o ntoa
+./ntoa
+```
+
+输出:
+
+```c
+Dotted-Decimal notation1: 1.2.3.4
+Dotted-Decimal notation2: 1.1.1.1
+Dotted-Decimal notation3: 1.2.3.4
+```
+
+#### 3.4.2 网络地址初始化
+
+结合前面的内容，介绍套接字创建过程中，常见的网络信息初始化方法：
+
+```c
+struct sockaddr_in addr;
+char *serv_ip = "211.217,168.13";          //声明IP地址族
+char *serv_port = "9190";                  //声明端口号字符串
+memset(&addr, 0, sizeof(addr));            //结构体变量 addr 的所有成员初始化为0
+addr.sin_family = AF_INET;                 //制定地址族
+addr.sin_addr.s_addr = inet_addr(serv_ip); //基于字符串的IP地址初始化
+addr.sin_port = htons(atoi(serv_port));    //基于字符串的IP地址端口号初始化
+```
+
+
 
 ## License
 
