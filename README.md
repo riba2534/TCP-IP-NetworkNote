@@ -1180,7 +1180,90 @@ client:
 
 本章代码，在[TCP-IP-NetworkNote](https://github.com/riba2534/TCP-IP-NetworkNote)中可以找到。
 
+上一章仅仅是从编程角度学习实现方法，并未详细讨论 TCP 的工作原理。因此，本章将想次讲解 TCP 中必要的理论知识，还将给出第 4 章客户端问题的解决方案。
+
 ### 5.1 回声客户端的完美实现
+
+#### 5.1.1 回声服务器没有问题，只有回声客户端有问题？
+
+问题不在服务器端，而在客户端，只看代码可能不好理解，因为 I/O 中使用了相同的函数。先回顾一下服务器端的 I/O 相关代码：
+
+```c
+while ((str_len = read(clnt_sock, message, BUF_SIZE)) != 0)
+    write(clnt_sock, message, str_len);
+```
+
+接着是客户端代码:
+
+```c
+write(sock, message, strlen(message));
+str_len = read(sock, message, BUF_SIZE - 1);
+```
+
+二者都在村换调用 read 和 write 函数。实际上之前的回声客户端将 100% 接受字节传输的数据，只不过接受数据时的单位有些问题。扩展客户端代码回顾范围，下面是，客户端的代码:
+
+```c
+while (1)
+{
+    fputs("Input message(Q to quit): ", stdout);
+    fgets(message, BUF_SIZE, stdin);
+
+    if (!strcmp(message, "q\n") || !strcmp(message, "Q\n"))
+        break;
+
+    write(sock, message, strlen(message));
+    str_len = read(sock, message, BUF_SIZE - 1);
+    message[str_len] = 0;
+    printf("Message from server: %s", message);
+}
+```
+
+现在应该理解了问题，回声客户端传输的是字符串，而且是通过调用 write 函数一次性发送的。之后还调用一次 read 函数，期待着接受自己传输的字符串，这就是问题所在。
+
+#### 5.1.2 回声客户端问题的解决办法
+
+这个问题其实很容易解决，因为可以提前接受数据的大小。若之前传输了20字节长的字符串，则再接收时循环调用 read 函数读取 20 个字节即可。既然有了解决办法，那么代码如下：
+
+- [echo_client2.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch05/echo_client2.c)
+
+这样修改为了接收所有传输数据而循环调用 read 函数。测试及运行结果可参考第四章。
+
+#### 5.1.3 如果问题不在于回声客户端：定义应用层协议
+
+回声客户端可以提前知道接收数据的长度，这在大多数情况下是不可能的。那么此时无法预知接收数据长度时应该如何手法数据？这是需要的是**应用层协议**的定义。在收发过程中定好规则（协议）以表示数据边界，或者提前告知需要发送的数据的大小。服务端/客户端实现过程中逐步定义的规则集合就是应用层协议。
+
+现在写一个小程序来体验应用层协议的定义过程。要求：
+
+1. 服务器从客户端获得多个数组和运算符信息。
+2. 服务器接收到数字候对齐进行加减乘运算，然后把结果传回客户端。
+
+例：
+
+1. 向服务器传递3,5,9的同事请求加法运算，服务器返回3+5+9的结果
+2. 请求做乘法运算，客户端会收到`3*5*9`的结果
+3. 如果向服务器传递4,3,2的同时要求做减法，则返回4-3-2的运算结果。
+
+请自己实现一个程序来实现功能。
+
+我自己的实现：
+
+- [My_op_server.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch05/My_op_server.c)
+- [My_op_client.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch05/My_op_client.c)
+
+编译：
+
+```shell
+gcc My_op_client.c -o myclient
+gcc My_op_server.c -o myserver
+```
+
+结果：
+
+![](https://i.loli.net/2019/01/15/5c3d966b81c03.png)
+
+其实主要是对程序的一点点小改动，只需要再客户端固定好发送的格式，服务端按照固定格式解析，然后返回结果即可。
+
+书上的实现：
 
 
 
