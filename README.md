@@ -1265,7 +1265,60 @@ gcc My_op_server.c -o myserver
 
 书上的实现：
 
+- [op_client.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch05/op_client.c)
+- [op_server.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch05/op_server.c)
 
+阅读代码要注意一下，`int*`与`char`之间的转换。TCP 中不存在数据边界。
+
+编译：
+
+```shell
+gcc op_client.c -o opclient
+gcc op_server.c -o opserver
+```
+
+运行:
+
+```shell
+./opserver 9190
+./opclient 127.0.0.1 9190
+```
+
+结果：
+
+![](https://i.loli.net/2019/01/16/5c3ea297c7649.png)
+
+### 5.2 TCP 原理
+
+#### 5.2.1 TCP 套接字中的 I/O 缓冲
+
+TCP 套接字的数据收发无边界。服务器即使调用 1 次 write 函数传输 40 字节的数据，客户端也有可能通过 4 次 read 函数调用每次读取 10 字节。但此处也有一些一问，服务器一次性传输了 40 字节，而客户端竟然可以缓慢的分批接受。客户端接受 10 字节后，剩下的 30 字节在何处等候呢？
+
+实际上，write 函数调用后并非立即传输数据， read 函数调用后也并非马上接收数据。如图所示，write 函数滴啊用瞬间，数据将移至输出缓冲；read 函数调用瞬间，从输入缓冲读取数据。
+
+![](https://i.loli.net/2019/01/16/5c3ea41cd93c6.png)
+
+I/O 缓冲特性可以整理如下：
+
+- I/O 缓冲在每个 TCP 套接字中单独存在
+- I/O 缓冲在创建套接字时自动生成
+- 即使关闭套接字也会继续传递输出缓冲中遗留的数据
+- 关闭套接字将丢失输入缓冲中的数据
+
+假设发生以下情况，会发生什么事呢？
+
+> 客户端输入缓冲为 50 字节，而服务器端传输了 100 字节。
+
+因为 TCP 不会发生超过输入缓冲大小的数据传输。也就是说，根本不会发生这类问题，因为 TCP 会控制数据流。TCP 中有滑动窗口（Sliding Window）协议，用对话方式如下：
+
+> - A：你好，最多可以向我传递 50 字节
+> - B：好的
+> - A：我腾出了 20 字节的空间，最多可以接受 70 字节
+> - B：好的
+
+数据收发也是如此，因此 TCP 中不会因为缓冲溢出而丢失数据。
+
+write 函数在数据传输完成时返回。
 
 
 
