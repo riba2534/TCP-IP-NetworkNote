@@ -1570,6 +1570,85 @@ host1 是服务端，host2 是客户端，host2 一次性把数据发给服务�
 
 TCP 套接字中需注册待传传输数据的目标IP和端口号，而在 UDP 中无需注册。因此通过 sendto 函数传输数据的过程大概可以分为以下 3 个阶段：
 
+- 第 1 阶段：向 UDP 套接字注册目标 IP 和端口号
+- 第 2 阶段：传输数据
+- 第 3 阶段：删除 UDP 套接字中注册的目标地址信息。
+
+每次调用 sendto 函数时重复上述过程。每次都变更目标地址，因此可以重复利用同一 UDP 套接字向不同目标传递数据。这种未注册目标地址信息的套接字称为未连接套接字，反之，注册了目标地址的套接字称为连接 connected 套接字。显然，UDP 套接字默认属于未连接套接字。当一台主机向另一台主机传输很多信息时，上述的三个阶段中，第一个阶段和第三个阶段占整个通信过程中近三分之一的时间，缩短这部分的时间将会大大提高整体性能。
+
+#### 6.3.3 创建已连接 UDP 套接字
+
+创建已连接 UDP 套接字过程格外简单，只需针对 UDP 套接字调用 connect 函数。
+
+```c
+sock = socket(PF_INET, SOCK_DGRAM, 0);
+memset(&adr, 0, sizeof(adr));
+adr.sin_family = AF_INET;
+adr.sin_addr.s_addr = inet_addr(argv[1]);
+adr.sin_port = htons(atoi(argv[2]));
+connect(sock, (struct sockaddr *)&adr, sizeof(adr));
+```
+
+上述代码看似与 TCP 套接字创建过程一致，但 socket 函数的第二个参数分明是 SOCK_DGRAM 。也就是说，创建的的确是 UDP 套接字。当然针对 UDP 调用 connect 函数并不是意味着要与对方 UDP 套接字连接，这只是向 UDP 套接字注册目标IP和端口信息。
+
+之后就与 TCP 套接字一致，每次调用 sendto 函数时只需传递信息数据。因为已经指定了收发对象，所以不仅可以使用 sendto、recvfrom 函数，还可以使用 write、read 函数进行通信。
+
+下面的例子把之前的 [uecho_client.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch06/uecho_client.c) 程序改成了基于已连接 UDP 的套接字的程序，因此可以结合 [uecho_server.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch06/uecho_server.c) 程序运行。代码如下：
+
+- [uecho_con_client.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch06/uecho_con_client.c)
+
+编译运行过程与上面一样，故省略。
+
+上面的代码中用 write、read 函数代替了 sendto、recvfrom 函数。
+
+### 6.4 基于 Windows 的实现
+
+暂略
+
+### 6.5 习题
+
+> 以下答案仅代表本人个人观点，可能不是正确答案。
+
+1. **UDP 为什么比 TCP 快？为什么 TCP 传输可靠而 TCP 传输不可靠？**
+
+   答：为了提供可靠的数据传输服务，TCP 在不可靠的IP层进行流控制，而 UDP 缺少这种流控制。所以 UDP 是不可靠的连接。
+
+2. **下面不属于 UDP 特点的是？**
+
+   下面加粗的代表此句话正确
+
+   1. **UDP 不同于 TCP ，不存在连接概念，所以不像 TCP 那样只能进行一对一的数据传输。**
+   2. 利用 UDP 传输数据时，如果有 2 个目标，则需要 2 个套接字。
+   3. UDP 套接字中无法使用已分配给 TCP 的同一端口号
+   4. **UDP 套接字和 TCP 套接字可以共存。若需要，可以同时在同一主机进行 TCP 和 UDP 数据传输。**
+   5. 针对 UDP 函数也可以调用 connect 函数，此时 UDP 套接字跟 TCP 套接字相同，也需要经过 3 次握手阶段。
+
+3. **UDP 数据报向对方主机的 UDP 套接字传递过程中，IP 和 UDP 分别负责哪些部分？**
+
+   答：IP的作用就是让离开主机的 UDP 数据包准确传递到另一个主机。但把 UDP 包最终交给主机的某一 UDP 套接字的过程则是由 UDP 完成的。UDP 的最重要的作用就是根据端口号将传到主机的数据包交付给最终的 UDP 套接字。
+
+4. **UDP 一般比 TCP 快，但根据交换数据的特点，其差异可大可小。请你说明何种情况下 UDP 的性能优于 TCP？**
+
+   答：如果收发数据量小但需要频繁连接时，UDP 比 TCP 更高效。
+
+5. **客户端 TCP 套接字调用 connect 函数时自动分配IP和端口号。UDP 中不调用 bind 函数，那何时分配IP和端口号？**
+
+   答：在首次调用 sendto 函数时自动给相应的套接字分配IP和端口号。而且此时分配的地址一直保留到程序结束为止。
+
+6. **TCP 客户端必须调用 connect 函数，而 UDP 可以选择性调用。请问，在 UDP 中调用 connect 函数有哪些好处？** 
+
+   答：要与同一个主机进行长时间通信时，将 UDP 套接字变成已连接套接字会提高效率。因为三个阶段中，第一个阶段和第三个阶段占用了一大部分时间，调用 connect 函数可以节省这些时间。
+
+## 第 7 章 优雅的断开套接字的连接
+
+本章代码，在[TCP-IP-NetworkNote](https://github.com/riba2534/TCP-IP-NetworkNote)中可以找到。
+
+本章讨论如何优雅的断开套接字的连接，之前用的方法不够优雅是因为，我们是调用 close 函数或 closesocket 函数单方面断开连接的。
+
+### 7.1 基于 TCP 的半关闭
+
+
+
 
 
 
