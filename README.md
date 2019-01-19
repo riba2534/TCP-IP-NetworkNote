@@ -1916,7 +1916,125 @@ gcc gethostbyaddr.c -o hostaddr
 
 ## 第 9 章 套接字的多种可选项
 
+本章代码，在[TCP-IP-NetworkNote](https://github.com/riba2534/TCP-IP-NetworkNote)中可以找到。
 
+### 9.1 套接字可选项和 I/O 缓冲大小
+
+我们进行套接字编程时往往只关注数据通信，而忽略了套接字具有的不同特性。但是，理解这些特性并根据实际需要进行更改也很重要
+
+#### 9.1.1 套接字多种可选项
+
+我们之前写得程序都是创建好套接字之后直接使用的，此时通过默认的套接字特性进行数据通信，这里列出了一些套接字可选项。
+
+|   协议层    |      选项名       | 读取 | 设置 |
+| :---------: | :---------------: | :--: | :--: |
+| SOL_SOCKET  |     SO_SNDBUF     |  O   |  O   |
+| SOL_SOCKET  |     SO_RCVBUF     |  O   |  O   |
+| SOL_SOCKET  |   SO_REUSEADDR    |  O   |  O   |
+| SOL_SOCKET  |   SO_KEEPALIVE    |  O   |  O   |
+| SOL_SOCKET  |   SO_BROADCAST    |  O   |  O   |
+| SOL_SOCKET  |   SO_DONTROUTE    |  O   |  O   |
+| SOL_SOCKET  |   SO_OOBINLINE    |  O   |  O   |
+| SOL_SOCKET  |     SO_ERROR      |  O   |  X   |
+| SOL_SOCKET  |      SO_TYPE      |  O   |  X   |
+| IPPROTO_IP  |      IP_TOS       |  O   |  O   |
+| IPPROTO_IP  |      IP_TTL       |  O   |  O   |
+| IPPROTO_IP  | IP_MULTICAST_TTL  |  O   |  O   |
+| IPPROTO_IP  | IP_MULTICAST_LOOP |  O   |  O   |
+| IPPROTO_IP  |  IP_MULTICAST_IF  |  O   |  O   |
+| IPPROTO_TCP |   TCP_KEEPALIVE   |  O   |  O   |
+| IPPROTO_TCP |    TCP_NODELAY    |  O   |  O   |
+| IPPROTO_TCP |    TCP_MAXSEG     |  O   |  O   |
+
+从表中可以看出，套接字可选项是分层的。
+
+- IPPROTO_IP 可选项是IP协议相关事项
+
+- IPPROTO_TCP 层可选项是 TCP 协议的相关事项
+
+- SOL_SOCKET 层是套接字的通用可选项。
+
+#### 9.1.2 `getsockopt` & `setsockopt`
+
+可选项的读取和设置通过以下两个函数来完成
+
+```c
+#include <sys/socket.h>
+
+int getsockopt(int sock, int level, int optname, void *optval, socklen_t *optlen);
+/*
+成功时返回 0 ，失败时返回 -1
+sock: 用于查看选项套接字文件描述符
+level: 要查看的可选项协议层
+optname: 要查看的可选项名
+optval: 保存查看结果的缓冲地址值
+optlen: 向第四个参数传递的缓冲大小。调用函数候，该变量中保存通过第四个参数返回的可选项信息的字节数。
+*/
+```
+
+上述函数可以用来读取套接字可选项，下面的函数可以更改可选项：d
+
+```c
+#include <sys/socket.h>
+
+int setsockopt(int sock, int level, int optname, const void *optval, socklen_t optlen);
+/*
+成功时返回 0 ，失败时返回 -1
+sock: 用于更改选项套接字文件描述符
+level: 要更改的可选项协议层
+optname: 要更改的可选项名
+optval: 保存更改结果的缓冲地址值
+optlen: 向第四个参数传递的缓冲大小。调用函数候，该变量中保存通过第四个参数返回的可选项信息的字节数。
+*/
+```
+
+下面的代码可以看出 getsockopt 的使用方法。下面示例用协议层为 SOL_SOCKET 、名为 SO_TYPE 的可选项查看套接字类型（TCP 和 UDP ）。
+
+- [sock_type.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch09/sock_type.c)
+
+编译运行：
+
+```shell
+gcc sock_type.c -o sock_type
+./sock_type
+```
+
+结果：
+
+```
+SOCK_STREAM: 1
+SOCK_DGRAM: 2
+Socket type one: 1
+Socket type two: 2
+```
+
+首先创建了一个 TCP 套接字和一个 UDP 套接字。然后通过调用 getsockopt 函数来获得当前套接字的状态。
+
+验证套接类型的 SO_TYPE 是只读可选项，因为**套接字类型只能在创建时决定，以后不能再更改**。
+
+#### 9.1.3 `SO_SNDBUF` & `SO_RCVBUF`
+
+创建套接字的同时会生成 I/O 缓冲。关于 I/O 缓冲，可以去看第五章。
+
+SO_RCVBUF 是输入缓冲大小相关可选项，SO_SNDBUF 是输出缓冲大小相关可选项。用这 2 个可选项既可以读取当前 I/O 大小，也可以进行更改。通过下列示例读取创建套接字时默认的 I/O 缓冲大小。
+
+- [get_buf.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch09/get_buf.c)
+
+编译运行：
+
+```shell
+gcc get_buf.c -o getbuf
+./getbuf
+```
+
+运行结果：
+
+```
+Input buffer size: 87380
+Output buffer size: 16384
+```
+
+可以看出本机的输入缓冲和输出缓冲大小。
 
 
 
