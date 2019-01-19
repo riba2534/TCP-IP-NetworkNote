@@ -222,6 +222,8 @@ getsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&opt_val, opt_len);
 
 如果正在使用`Nagle` 算法，那么 opt_val 值为 0，如果禁用则为 1.
 
+关于这个算法，可以参考这个回答：[TCP连接中启用和禁用TCP_NODELAY有什么影响？](https://www.zhihu.com/question/42308970/answer/246334766)
+
 ### 9.4 基于 Windows 的实现
 
 暂略
