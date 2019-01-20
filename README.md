@@ -2264,6 +2264,22 @@ gcc fork.c -o fork
 
 进程的工作完成后（执行完 main 函数中的程序后）应被销毁，但有时这些进程将变成僵尸进程，占用系统中的重要资源。这种状态下的进程称作「僵尸进程」，这也是给系统带来负担的原因之一。
 
+> 僵尸进程是当子进程比父进程先结束，而父进程又没有回收子进程，释放子进程占用的资源，此时子进程将成为一个僵尸进程。如果父进程先退出 ，子进程被init接管，子进程退出后init会回收其占用的相关资源
+
+**维基百科**：
+
+> 在类UNIX系统中，僵尸进程是指完成执行（通过exit系统调用，或运行时发生致命错误或收到终止信号所致）但在操作系统的进程表中仍然有一个表项（进程控制块PCB），处于"终止状态"的进程。这发生于子进程需要保留表项以允许其父进程读取子进程的exit status：一旦退出态通过wait系统调用读取，僵尸进程条目就从进程表中删除，称之为"回收（reaped）"。正常情况下，进程直接被其父进程wait并由系统回收。进程长时间保持僵尸状态一般是错误的并导致资源泄漏。
+>
+> 英文术语zombie process源自丧尸 — 不死之人，隐喻子进程已死但仍然没有被收割。与正常进程不同，kill命令对僵尸进程无效。孤儿进程不同于僵尸进程，其父进程已经死掉，但孤儿进程仍能正常执行，但并不会变为僵尸进程，因为被init（进程ID号为1）收养并wait其退出。
+>
+> 子进程死后，系统会发送SIGCHLD 信号给父进程，父进程对其默认处理是忽略。如果想响应这个消息，父进程通常在SIGCHLD 信号事件处理程序中，使用wait系统调用来响应子进程的终止。
+>
+> 僵尸进程被收割后，其进程号(PID)与在进程表中的表项都可以被系统重用。但如果父进程没有调用wait，僵尸进程将保留进程表中的表项，导致了资源泄漏。某些情况下这反倒是期望的：父进程创建了另外一个子进程，并希望具有不同的进程号。如果父进程通过设置事件处理函数为SIG_IGN显式忽略SIGCHLD信号，而不是隐式默认忽略该信号，或者具有SA_NOCLDWAIT标志，所有子进程的退出状态信息将被抛弃并且直接被系统回收。
+>
+> UNIX命令ps列出的进程的状态（"STAT"）栏标示为 "Z"则为僵尸进程。[1]
+>
+> 收割僵尸进程的方法是通过kill命令手工向其父进程发送SIGCHLD信号。如果其父进程仍然拒绝收割僵尸进程，则终止父进程，使得init进程收养僵尸进程。init进程周期执行wait系统调用收割其收养的所有僵尸进程。
+
 #### 10.2.2 产生僵尸进程的原因
 
 为了防止僵尸进程产生，先解释产生僵尸进程的原因。利用如下两个示例展示调用 fork 函数产生子进程的终止方式。
@@ -2271,8 +2287,330 @@ gcc fork.c -o fork
 - 传递参数并调用 exit() 函数
 - main 函数中执行 return 语句并返回值
 
-向 exit 函数传递的参数值和 main 函数的 return 语句返回的值都回传递给操作系统。而操作系统不会销毁子进程，知道把这些值传递给产生该子进程的父进程。处在这种状态下的进程就是僵尸进程。也就是说
+**向 exit 函数传递的参数值和 main 函数的 return 语句返回的值都回传递给操作系统。而操作系统不会销毁子进程，知道把这些值传递给产生该子进程的父进程。处在这种状态下的进程就是僵尸进程。**也就是说将子进程变成僵尸进程的正是操作系统。既然如此，僵尸进程何时被销毁呢？
 
+> 应该向创建子进程册父进程传递子进程的 exit 参数值或 return 语句的返回值。
+
+如何向父进程传递这些值呢？操作系统不会主动把这些值传递给父进程。只有父进程主动发起请求（函数调用）的时候，操作系统才会传递该值。换言之，如果父进程未主动要求获得子进程结束状态值，操作系统将一直保存，并让子进程长时间处于僵尸进程状态。也就是说，父母要负责收回自己生的孩子。接下来的示例是创建僵尸进程：
+
+- [zombie.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch10/zombie.c)
+
+```c
+#include <stdio.h>
+#include <unistd.h>
+int main(int argc, char *argv[])
+{
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        puts("Hi, I am a child Process");
+    }
+    else
+    {
+        printf("Child Process ID: %d \n", pid);
+        sleep(30);
+    }
+    if (pid == 0)
+        puts("End child proess");
+    else
+        puts("End parent process");
+    return 0;
+}
+```
+
+编译运行：
+
+```shell
+gcc zombie.c -o zombie
+./zombie
+```
+
+结果：
+
+![](https://i.loli.net/2019/01/20/5c443890f1781.png)
+
+因为暂停了 30 秒，所以在这个时间内可以验证一下子进程是否为僵尸进程。
+
+![](https://i.loli.net/2019/01/20/5c4439a751b11.png)
+
+通过 `ps au` 命令可以看出，子进程仍然存在，并没有被销毁，僵尸进程在这里显示为 `Z+`.30秒后，红框里面的两个进程会同时被销毁。
+
+> 利用 `./zombie &`可以使程序在后台运行，不用打开新的命令行窗口。
+
+#### 10.2.3 销毁僵尸进程 1：利用 wait 函数
+
+如前所述，为了销毁子进程，父进程应该主动请求获取子进程的返回值。下面是发起请求的具体方法。有两种，下面的函数是其中一种。
+
+```c
+#include <sys/wait.h>
+pid_t wait(int *statloc);
+/*
+成功时返回终止的子进程 ID ,失败时返回 -1
+*/
+```
+
+调用此函数时如果已有子进程终止，那么子进程终止时传递的返回值（exit 函数的参数返回值，main 函数的 return 返回值）将保存到该函数的参数所指的内存空间。但函数参数指向的单元中还包含其他信息，因此需要用下列宏进行分离：
+
+- WIFEXITED 子进程正常终止时返回「真」
+- WEXITSTATUS 返回子进程时的返回值
+
+也就是说，向 wait 函数传递变量 status 的地址时，调用 wait 函数后应编写如下代码：
+
+```c
+if (WIFEXITED(status))
+{
+    puts("Normal termination");
+    printf("Child pass num: %d", WEXITSTATUS(status));
+}
+```
+
+根据以上内容，有如下示例：
+
+- [wait.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch10/wait.c)
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main(int argc, char *argv[])
+{
+    int status;
+    pid_t pid = fork(); //这里的子进程将在第13行通过 return 语句终止
+
+    if (pid == 0)
+    {
+        return 3;
+    }
+    else
+    {
+        printf("Child PID: %d \n", pid);
+        pid = fork(); //这里的子进程将在 21 行通过 exit() 函数终止
+        if (pid == 0)
+        {
+            exit(7);
+        }
+        else
+        {
+            printf("Child PID: %d \n", pid);
+            wait(&status);         //之间终止的子进程相关信息将被保存到 status 中，同时相关子进程被完全销毁
+            if (WIFEXITED(status)) //通过 WIFEXITED 来验证子进程是否正常终止。如果正常终止，则调用 WEXITSTATUS 宏输出子进程返回值
+                printf("Child send one: %d \n", WEXITSTATUS(status));
+
+            wait(&status); //因为之前创建了两个进程，所以再次调用 wait 函数和宏
+            if (WIFEXITED(status))
+                printf("Child send two: %d \n", WEXITSTATUS(status));
+            sleep(30);
+        }
+    }
+    return 0;
+}
+```
+
+编译运行：
+
+```shell
+gcc wait.c -o wait
+./wait
+```
+
+结果：
+
+![](https://i.loli.net/2019/01/20/5c4441951df43.png)
+
+此时，系统中并没有上述 PID 对应的进程，这是因为调用了 wait 函数，完全销毁了该子进程。另外两个子进程返回时返回的 3 和 7 传递到了父进程。
+
+这就是通过 wait 函数消灭僵尸进程的方法，调用 wait 函数时，如果没有已经终止的子进程，那么程序将阻塞（Blocking）直到有子进程终止，因此要谨慎调用该函数。
+
+#### 10.2.4 销毁僵尸进程 2：使用 waitpid 函数
+
+wait 函数会引起程序阻塞，还可以考虑调用 waitpid 函数。这是防止僵尸进程的第二种方法，也是防止阻塞的方法。
+
+```c
+#include <sys/wait.h>
+pid_t waitpid(pid_t pid, int *statloc, int options);
+/*
+成功时返回终止的子进程ID 或 0 ，失败时返回 -1
+pid: 等待终止的目标子进程的ID,若传 -1，则与 wait 函数相同，可以等待任意子进程终止
+statloc: 与 wait 函数的 statloc 参数具有相同含义
+options: 传递头文件 sys/wait.h 声明的常量 WNOHANG ,即使没有终止的子进程也不会进入阻塞状态，而是返回 0 退出函数。
+*/
+```
+
+以下是 waitpid 的使用示例：
+
+- [waitpid.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch10/waitpid.c)
+
+```c
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+int main(int argc, char *argv[])
+{
+    int status;
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        sleep(15); //用 sleep 推迟子进程的执行
+        return 24;
+    }
+    else
+    {
+        //调用waitpid 传递参数 WNOHANG ，这样之前有没有终止的子进程则返回0
+        while (!waitpid(-1, &status, WNOHANG))
+        {
+            sleep(3);
+            puts("sleep 3 sec.");
+        }
+        if (WIFEXITED(status))
+            printf("Child send %d \n", WEXITSTATUS(status));
+    }
+    return 0;
+}
+```
+
+编译运行：
+
+```shell
+gcc waitpid.c -o waitpid
+./waitpid
+```
+
+结果:
+
+![](https://i.loli.net/2019/01/20/5c444785a16ae.png)
+
+可以看出来，在 while 循环中正好执行了 5 次。这也证明了 waitpid 函数并没有阻塞
+
+### 10.3 信号处理
+
+我们已经知道了进程的创建及销毁的办法，但是还有一个问题没有解决。
+
+> 子进程究竟何时终止？调用 waitpid 函数后要无休止的等待吗？
+
+#### 10.3.1 向操作系统求助
+
+子进程终止的识别主题是操作系统，因此，若操作系统能把如下信息告诉正忙于工作的父进程，将有助于构建更高效的程序
+
+为了实现上述的功能，引入信号处理机制（Signal Handing）。此处「信号」是在特定事件发生时由操作系统向进程发送的消息。另外，为了响应该消息，执行与消息相关的自定义操作的过程被称为「处理」或「信号处理」。
+
+#### 10.3.2 信号与 signal 函数
+
+下面进程和操作系统的对话可以帮助理解信号处理。
+
+> 进程：操作系统，如果我之前创建的子进程终止，就帮我调用 zombie_handler 函数。
+>
+> 操作系统：好的，如果你的子进程终止，我舅帮你调用 zombie_handler 函数，你先把要函数要执行的语句写好。
+
+上述的对话，相当于「注册信号」的过程。即进程发现自己的子进程结束时，请求操作系统调用的特定函数。该请求可以通过如下函数调用完成：
+
+```c
+#include <signal.h>
+void (*signal(int signo, void (*func)(int)))(int);
+/*
+为了在产生信号时调用，返回之前注册的函数指针
+函数名: signal
+参数：int signo,void(*func)(int)
+返回类型：参数类型为int型，返回 void 型函数指针
+*/
+```
+
+调用上述函数时，第一个参数为特殊情况信息，第二个参数为特殊情况下将要调用的函数的地址值（指针）。发生第一个参数代表的情况时，调用第二个参数所指的函数。下面给出可以在 signal 函数中注册的部分特殊情况和对应的函数。
+
+- SIGALRM：已到通过调用 alarm 函数注册时间
+- SIGINT：输入 ctrl+c
+- SIGCHLD：子进程终止
+
+接下来编写调用 signal 函数的语句完成如下请求：
+
+> 「子进程终止则调用 mychild 函数」
+
+此时 mychild 函数的参数应为 int ，返回值类型应为 void 。只有这样才能称为 signal 函数的第二个参数。另外，常数 SIGCHLD 定义了子进程终止的情况，应成为 signal 函数的第一个参数。也就是说，signal 函数调用语句如下：
+
+```c
+signal(SIGCHLD , mychild);
+```
+
+接下来编写 signal 函数的调用语句，分别完成如下两个请求：
+
+1. 已到通过 alarm 函数注册时间，请调用 timeout 函数
+2. 输入 ctrl+c 时调用 keycontrol 函数
+
+代表这 2 种情况的常数分别为 SIGALRM 和 SIGINT ，因此按如下方式调用 signal 函数。
+
+```c
+signal(SIGALRM , timeout);
+signal(SIGINT , keycontrol);
+```
+
+以上就是信号注册过程。注册好信号之后，发生注册信号时（注册的情况发生时），操作系统将调用该信号对应的函数。先介绍 alarm 函数。
+
+```c
+#include <unistd.h>
+unsigned int alarm(unsigned int seconds);
+// 返回0或以秒为单位的距 SIGALRM 信号发生所剩时间
+```
+
+如果调用该函数的同时向它传递一个正整型参数，相应时间后（以秒为单位）将产生 SIGALRM 信号。若向该函数传递为 0 ，则之前对 SIGALRM 信号的预约将取消。如果通过改函数预约信号后未指定该信号对应的处理函数，则（通过调用 signal 函数）终止进程，不做任何处理。
+
+- [signal.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch10/signal.c)
+
+```c
+#include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
+void timeout(int sig) //信号处理器
+{
+    if (sig == SIGALRM)
+        puts("Time out!");
+    alarm(2); //为了每隔 2 秒重复产生 SIGALRM 信号，在信号处理器中调用 alarm 函数
+}
+void keycontrol(int sig) //信号处理器
+{
+    if (sig == SIGINT)
+        puts("CTRL+C pressed");
+}
+int main(int argc, char *argv[])
+{
+    int i;
+    signal(SIGALRM, timeout); //注册信号及相应处理器
+    signal(SIGINT, keycontrol);
+    alarm(2); //预约 2 秒候发生 SIGALRM 信号
+
+    for (i = 0; i < 3; i++)
+    {
+        puts("wait...");
+        sleep(100);
+    }
+    return 0;
+}
+```
+
+编译运行：
+
+```shell
+gcc signal.c -o signal
+./signal
+```
+
+结果：
+
+![](https://i.loli.net/2019/01/20/5c446c877acb7.png)
+
+上述结果是没有任何输入的运行结果。当输入 ctrl+c 时:
+
+![](https://i.loli.net/2019/01/20/5c446ce0b1143.png)
+
+就可以看到 `CTRL+C pressed` 的字符串。
+
+> 发生信号时将唤醒由于调用 sleep 函数而进入阻塞状态的进程。
+
+调用函数的主题的确是操作系统，但是进程处于睡眠状态时无法调用函数，因此，产生信号时，为了调用信号处理器，将唤醒由于调用 sleep 函数而进入阻塞状态的进程。而且，进程一旦被唤醒，就不会再进入睡眠状态。即使还未到 sleep 中规定的时间也是如此。所以上述示例运行不到 10 秒后就会结束，连续输入 CTRL+C 可能连一秒都不到。
+
+**简言之，就是本来系统要睡眠100秒，但是到了 alarm(2) 规定的两秒之后，就会唤醒睡眠的进程，进程被唤醒了就不会再进入睡眠状态了，所以就不用等待100秒。如果把 timeout() 函数中的 alarm(2) 注释掉，就会先输出`wait...`，然后再输出`Time out!` (这时已经跳过了第一次的 sleep(100) 秒),然后就真的会睡眠100秒，因为没有再发出 alarm(2)  的信号。**
+
+#### 10.3.3 利用 sigaction 函数进行信号处理
 
 
 
