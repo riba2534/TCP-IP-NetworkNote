@@ -1926,25 +1926,25 @@ gcc gethostbyaddr.c -o hostaddr
 
 我们之前写得程序都是创建好套接字之后直接使用的，此时通过默认的套接字特性进行数据通信，这里列出了一些套接字可选项。
 
-| 协议层 | 选项名 | 读取 | 设置 |
-| :----: | :----: |:--: | :--: |
-| SOL_SOCKET  |     SO_SNDBUF     |  O   |  O   |
-| SOL_SOCKET  |     SO_RCVBUF     |  O   |  O   |
-| SOL_SOCKET  |   SO_REUSEADDR    |  O   |  O   |
-| SOL_SOCKET  |   SO_KEEPALIVE    |  O   |  O   |
-| SOL_SOCKET  |   SO_BROADCAST    |  O   |  O   |
-| SOL_SOCKET  |   SO_DONTROUTE    |  O   |  O   |
-| SOL_SOCKET  |   SO_OOBINLINE    |  O   |  O   |
-| SOL_SOCKET  |     SO_ERROR      |  O   |  X   |
-| SOL_SOCKET  |      SO_TYPE      |  O   |  X   |
-| IPPROTO_IP  |      IP_TOS       |  O   |  O   |
-| IPPROTO_IP  |      IP_TTL       |  O   |  O   |
-| IPPROTO_IP  | IP_MULTICAST_TTL  |  O   |  O   |
-| IPPROTO_IP  | IP_MULTICAST_LOOP |  O   |  O   |
-| IPPROTO_IP  |  IP_MULTICAST_IF  |  O   |  O   |
-| IPPROTO_TCP |   TCP_KEEPALIVE   |  O   |  O   |
-| IPPROTO_TCP |    TCP_NODELAY    |  O   |  O   |
-| IPPROTO_TCP |    TCP_MAXSEG     |  O   |  O   |
+|   协议层    |      选项名       | 读取  | 设置  |
+| :---------: | :---------------: | :---: | :---: |
+| SOL_SOCKET  |     SO_SNDBUF     |   O   |   O   |
+| SOL_SOCKET  |     SO_RCVBUF     |   O   |   O   |
+| SOL_SOCKET  |   SO_REUSEADDR    |   O   |   O   |
+| SOL_SOCKET  |   SO_KEEPALIVE    |   O   |   O   |
+| SOL_SOCKET  |   SO_BROADCAST    |   O   |   O   |
+| SOL_SOCKET  |   SO_DONTROUTE    |   O   |   O   |
+| SOL_SOCKET  |   SO_OOBINLINE    |   O   |   O   |
+| SOL_SOCKET  |     SO_ERROR      |   O   |   X   |
+| SOL_SOCKET  |      SO_TYPE      |   O   |   X   |
+| IPPROTO_IP  |      IP_TOS       |   O   |   O   |
+| IPPROTO_IP  |      IP_TTL       |   O   |   O   |
+| IPPROTO_IP  | IP_MULTICAST_TTL  |   O   |   O   |
+| IPPROTO_IP  | IP_MULTICAST_LOOP |   O   |   O   |
+| IPPROTO_IP  |  IP_MULTICAST_IF  |   O   |   O   |
+| IPPROTO_TCP |   TCP_KEEPALIVE   |   O   |   O   |
+| IPPROTO_TCP |    TCP_NODELAY    |   O   |   O   |
+| IPPROTO_TCP |    TCP_MAXSEG     |   O   |   O   |
 
 从表中可以看出，套接字可选项是分层的。
 
@@ -2162,7 +2162,7 @@ getsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&opt_val, opt_len);
 
    答：当网络流量未受太大影响时，不使用 Nagle 算法要比使用它时传输速度快，比如说在传输大文件时。
 
-## 第 10 章 多进程服务端
+## 第 10 章 多进程服务器端
 
 本章代码，在[TCP-IP-NetworkNote](https://github.com/riba2534/TCP-IP-NetworkNote)中可以找到。
 
@@ -2824,7 +2824,106 @@ gcc echo_mpserv.c -o eserver
 
 结果：
 
+和第四章的几乎一样，可以自己测试，此时的服务端支持同时给多个客户端进行服务，每有一个客户端连接服务端，就会多开一个子进程，所以可以同时提供服务。
 
+#### 10.4.3 通过 fork 函数复制文件描述符
+
+示例中给出了通过 fork 函数复制文件描述符的过程。父进程将 2 个套接字（一个是服务端套接字另一个是客户端套接字）文件描述符复制给了子进程。
+
+调用 fork 函数时赋值父进程的所有资源，但是套接字不是归进程所有的，而是归操作系统所有，只是进程拥有代表相应套接字的文件描述符。
+
+![](https://s2.ax1x.com/2019/01/21/kP7Rjx.png)
+
+如图所示，1 个套接字存在 2 个文件描述符时，只有 2 个文件描述符都终止（销毁）后，才能销毁套接字。如果维持图中的状态，即使子进程销毁了与客户端连接的套接字文件描述符，也无法销毁套接字（服务器套接字同样如此）。因此调用 fork 函数候，要将无关紧要的套接字文件描述符关掉，如图所示：
+
+![](https://s2.ax1x.com/2019/01/21/kPH7ZT.png)
+
+### 10.5 分割 TCP 的 I/O 程序
+
+#### 10.5.1 分割 I/O 的优点
+
+我们已经实现的回声客户端的数据回声方式如下：
+
+> 向服务器传输数据，并等待服务器端回复。无条件等待，直到接收完服务器端的回声数据后，才能传输下一批数据。
+
+传输数据后要等待服务器端返回的数据，因为程序代码中重复调用了 read 和 write 函数。只能这么写的原因之一是，程序在 1 个进程中运行，现在可以创建多个进程，因此可以分割数据收发过程。默认分割过程如下图所示：
+
+![](https://s2.ax1x.com/2019/01/21/kPbhkD.png)
+
+从图中可以看出，客户端的父进程负责接收数据，额外创建的子进程负责发送数据，分割后，不同进程分别负责输入输出，这样，无论客户端是否从服务器端接收完数据都可以进程传输。
+
+分割 I/O 程序的另外一个好处是，可以提高频繁交换数据的程序性能，图下图所示：
+
+![](https://s2.ax1x.com/2019/01/21/kPbvtg.png)
+
+
+
+根据上图显示可以看出，再网络不好的情况下，明显提升速度。
+
+#### 10.5.2 回声客户端的 I/O 程序分割
+
+下面是回声客户端的 I/O 分割的代码实现：
+
+- [echo_mpclient.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch10/echo_mpclient.c)
+
+可以配合刚才的并发服务器进行执行。
+
+编译运行：
+
+```shell
+gcc echo_mpclient.c -o eclient
+./eclient 127.0.0.1 9190
+```
+
+结果：
+
+![](https://s2.ax1x.com/2019/01/21/kPOcXn.png)
+
+可以看出，基本和以前的一样，但是里面的内部结构却发生了很大的变化
+
+### 10.6 习题
+
+> 以下答案仅代表本人个人观点，可能不是正确答案。
+
+1. **下列关于进程的说法错误的是？**
+
+   答：以下加粗的内容为正确的
+
+   1. **从操作系统的角度上说，进程是程序运行的单位**
+   2. 进程根据创建方式建立父子关系
+   3. **进程可以包含其他进程，即一个进程的内存空间可以包含其他进程**
+   4. **子进程可以创建其他子进程，而创建出来的子进程还可以创建其他子进程，但所有这些进程只与一个父进程建立父子关系。**
+
+2. **调用 fork 函数将创建子进程，一下关于子进程错误的是？**
+
+   答：以下加粗的内容为正确的
+
+   1. **父进程销毁时也会同时销毁子进程**
+   2. **子进程是复制父进程所有资源创建出的进程**
+   3. 父子进程共享全局变量
+   4. 通过 fork 函数创建的子进程将执行从开始到 fork 函数调用为止的代码。
+
+3. **创建子进程时复制父进程所有内容，此时复制对象也包含套接字文件描述符。编写程序验证赋值的文件描述符整数值是否与原文件描述符数值相同。**
+
+   答：代码为多进程服务器修改而来，代码：[test_server.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch10/test_server.c)
+
+   运行截图：
+
+   ![](https://s2.ax1x.com/2019/01/21/kPj3Md.png)
+
+   从图上可以看出，数值相同。
+
+4. **请说明进程变为僵尸进程的过程以及预防措施。**
+
+   答：当一个父进程以fork()系统调用建立一个新的子进程后，核心进程就会在进程表中给这个子进程分配一个进入点，然后将相关信息存储在该进入点所对应的进程表内。这些信息中有一项是其父进程的识别码。而当这个子进程结束的时候（比如调用exit命令结束），其实他并没有真正的被销毁，而是留下一个称为僵尸进程（Zombie）的数据结构（系统调用exit的作用是使进程退出，但是也仅仅限于一个正常的进程变成了一个僵尸进程，并不能完全将其销毁）。**预防措施**：通过 wait 和 waitpid 函数加上信号函数写代码来预防。
+
+## 第 11 章 进程间通信
+
+本章代码，在[TCP-IP-NetworkNote](https://github.com/riba2534/TCP-IP-NetworkNote)中可以找到。
+
+进程间通信，意味着两个不同的进程中可以交换数据
+
+### 11.1 进程间通信的基本概念
 
 
 

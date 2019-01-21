@@ -31,6 +31,7 @@ int main(int argc, char *argv[])
     act.sa_flags = 0;
     state = sigaction(SIGCHLD, &act, 0);         //注册信号处理器,把成功的返回值给 state
     serv_sock = socket(PF_INET, SOCK_STREAM, 0); //创建服务端套接字
+
     memset(&serv_adr, 0, sizeof(serv_adr));
     serv_adr.sin_family = AF_INET;
     serv_adr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -40,11 +41,11 @@ int main(int argc, char *argv[])
         error_handling("bind() error");
     if (listen(serv_sock, 5) == -1) //进入等待连接请求状态
         error_handling("listen() error");
-
     while (1)
     {
         adr_sz = sizeof(clnt_adr);
         clnt_sock = accept(serv_sock, (struct sockaddr *)&clnt_adr, &adr_sz);
+        printf("父进程的 serv_sock：%d,clnt_sock:%d\n", serv_sock, clnt_sock);
         if (clnt_sock == -1)
             continue;
         else
@@ -57,6 +58,7 @@ int main(int argc, char *argv[])
         }
         if (pid == 0) //子进程运行区域,此部分向客户端提供回声服务
         {
+            printf("子进程的 serv_sock：%d,clnt_sock:%d\n", serv_sock, clnt_sock);
             close(serv_sock); //关闭服务器套接字，因为从父进程传递到了子进程
             while ((str_len = read(clnt_sock, buf, BUFSIZ)) != 0)
                 write(clnt_sock, buf, str_len);
