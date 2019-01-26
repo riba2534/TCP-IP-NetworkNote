@@ -3360,6 +3360,113 @@ gcc echo_selectserv.c -o selserv
 
 ### 13.1 send & recv 函数
 
+#### 13.1.1 Linux 中的 send & recv
+
+首先看 sned 函数定义：
+
+```c
+#include <sys/socket.h>
+ssize_t send(int sockfd, const void *buf, size_t nbytes, int flags);
+/*
+成功时返回发送的字节数，失败时返回 -1
+sockfd: 表示与数据传输对象的连接的套接字和文件描述符
+buf: 保存带传输数据的缓冲地址值
+nbytes: 待传输字节数
+flags: 传输数据时指定的可选项信息
+*/
+```
+
+下面是 recv 函数的定义：
+
+```c
+#include <sys/socket.h>
+ssize_t recv(int sockfd, void *buf, size_t nbytes, int flags);
+/*
+sockfd: 表示数据接受对象的连接的套接字文件描述符
+buf: 保存接受数据的缓冲地址值
+nbytes: 可接收的最大字节数
+flags: 接收数据时指定的可选项参数
+*/
+```
+
+send 和 recv 函数都是最后一个参数是收发数据的可选项，该选项可以用位或（bit OR）运算符（| 运算符）同时传递多个信息。
+
+send & recv 函数的可选项意义：
+
+| 可选项（Option） | 含义                                                         | send | recv |
+| ---------------- | ------------------------------------------------------------ | ---- | ---- |
+| MSG_OOB          | 用于传输带外数据（Out-of-band data）                         | O    | O    |
+| MSG_PEEK         | 验证输入缓冲中是否存在接受的数据                             | X    | O    |
+| MSG_DONTROUTE    | 数据传输过程中不参照本地路由（Routing）表，在本地（Local）网络中寻找目的地 | O    | X    |
+| MSG_DONTWAIT     | 调用 I/O 函数时不阻塞，用于使用非阻塞（Non-blocking）I/O     | O    | O    |
+| MSG_WAITALL      | 防止函数返回，直到接收到全部请求的字节数                     | X    | O    |
+
+#### 13.1.2 MSG_OOB：发送紧急消息
+
+MSG_OOB 可选项用于创建特殊发送方法和通道以发送紧急消息。下面为 MSG_OOB 的示例代码：
+
+- [oob_recv.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch13/oob_recv.c)
+- [oob_send.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch13/oob_send.c)
+
+编译运行：
+
+```shell
+gcc oob_send.c -o send
+gcc oob_recv.c -o recv
+```
+
+运行结果：
+
+![](https://i.loli.net/2019/01/26/5c4bda167ae08.png)
+
+![](https://i.loli.net/2019/01/26/5c4bdb4d99823.png)
+
+从运行结果可以看出，send 是客户端，recv 是服务端，客户端给服务端发送消息，服务端接收完消息之后显示出来。可以从图中看出，每次运行的效果，并不是一样的。
+
+代码中关于:
+
+```c
+fcntl(recv_sock, F_SETOWN, getpid());
+```
+
+的意思是：
+
+> 文件描述符 recv_sock 指向的套接字引发的 SIGURG 信号处理进程变为 getpid 函数返回值用作 ID 进程.
+
+上述描述中的「处理 SIGURG 信号」指的是「调用 SIGURG 信号处理函数」。但是之前讲过，多个进程可以拥有 1 个套接字的文件描述符。例如，通过调用 fork 函数创建子进程并同时复制文件描述符。此时如果发生 SIGURG 信号，应该调用哪个进程的信号处理函数呢？可以肯定的是，不会调用所有进程的信号处理函数。因此，处理 SIGURG 信号时必须指定处理信号所用的进程，而 getpid 返回的是调用此函数的进程 ID 。上述调用语句指当前为处理 SIGURG 信号的主体。
+
+输出结果，可能出乎意料：
+
+> 通过 MSG_OOB 可选项传递数据时只返回 1 个字节，而且也不快
+
+的确，通过 MSG_OOB 并不会加快传输速度，而通过信号处理函数 urg_handler 也只能读取一个字节。剩余数据只能通过未设置 MSG_OOB 可选项的普通输入函数读取。因为 TCP 不存在真正意义上的「外带数据」。实际上，MSG_OOB 中的 OOB 指的是 Out-of-band ，而「外带数据」的含义是：
+
+> 通过去完全不同的通信路径传输的数据
+
+即真正意义上的 Out-of-band 需要通过单独的通信路径高速传输数据，但是 TCP 不另外提供，只利用 TCP 的紧急模式（Urgent mode）进行传输。
+
+#### 13.1.3 紧急模式工作原理
+
+MSG_OOB 的真正意义在于督促数据接收对象尽快处理数据。这是紧急模式的全部内容，而 TCP 「保持传输顺序」的传输特性依然成立。TCP 的紧急消息无法保证及时到达，但是可以要求急救。下面是 MSG_OOB 可选项状态下的数据传输过程，如图：
+
+![](https://i.loli.net/2019/01/26/5c4be222845cc.png)
+
+上面是:
+
+```c
+send(sock, "890", strlen("890"), MSG_OOB);
+```
+
+图上是调用这个函数的缓冲状态。如果缓冲最左端的位置视作偏移量 0 。字符 0 保存于偏移量 2 的位置。另外，字符 0 右侧偏移量为 3 的位置存有紧急指针（Urgent Pointer）。紧急指针指向紧急消息的下一个位置（偏移量加一），同时向对方主机传递一下信息：
+
+> 紧急指针指向的偏移量为 3 之前的部分就是紧急消息。
+
+也就是说，实际上只用了一个字节表示紧急消息。这一点可以通过图中用于传输数据的 TCP 数据包（段）的结构看得更清楚，如图：
+
+![](https://i.loli.net/2019/01/26/5c4beeae46b4e.png)
+
+
+
 
 
 ## License
