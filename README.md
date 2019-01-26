@@ -3354,7 +3354,7 @@ gcc echo_selectserv.c -o selserv
 
    答：应该包含到「是否存在待读取数据」，因为服务器端需要查看套接字中有没有可以读取的数据。
 
-### 第 13 章 多种 I/O 函数
+## 第 13 章 多种 I/O 函数
 
 本章代码，在[TCP-IP-NetworkNote](https://github.com/riba2534/TCP-IP-NetworkNote)中可以找到。
 
