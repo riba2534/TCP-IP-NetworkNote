@@ -1,6 +1,6 @@
 # 《TCP/IP网络编程》学习笔记
 
-:flags:此仓库是我的《TCP/IP网络编程》学习笔记及具体代码实现，代码部分请参考本仓库对应章节文件夹下的代码。
+:flags: 此仓库是我的《TCP/IP网络编程》学习笔记及具体代码实现，代码部分请参考本仓库对应章节文件夹下的代码。如果本笔记的内容对你有用，请点击一个 `star` ，转载请注明出处，谢谢。
 
 我的环境是：Ubuntu18.04 LTS
 
@@ -4617,15 +4617,379 @@ gcc echo_EPETserv.c -o serv
 
 #### 18.1.1 引入线程背景
 
+第 10 章介绍了多进程服务端的实现方法。多进程模型与 select 和 epoll 相比的确有自身的优点，但同时也有问题。如前所述，创建（复制）进程的工作本身会给操作系统带来相当沉重的负担。而且，每个进程都具有独立的内存空间，所以进程间通信的实现难度也会随之提高。换言之，多进程的缺点可概括为：
+
+- 创建进程的过程会带来一定的开销
+- 为了完成进程间数据交换，需要特殊的 IPC 技术。
+
+但是更大的缺点是下面的：
+
+- 每秒少则 10 次，多则千次的「上下文切换」是创建进程的最大开销
+
+只有一个 CPU 的系统是将时间分成多个微小的块后分配给了多个进程。为了分时使用 CPU ，需要「上下文切换」的过程。「上下文切换」是指运行程序前需要将相应进程信息读入内存，如果运行进程 A 后紧接着需要运行进程 B ，就应该将进程 A 相关信息移出内存，并读入进程 B 相关信息。这就是上下文切换。但是此时进程 A 的数据将被移动到硬盘，所以上下文切换要很长时间，即使通过优化加快速度，也会存在一定的局限。
+
+为了保持多进程的优点，同时在一定程度上克服其缺点，人们引入的线程（Thread）的概念。这是为了将进程的各种劣势降至最低程度（不是直接消除）而设立的一种「轻量级进程」。线程比进程具有如下优点：
+
+- 线程的创建和上下文切换比进程的创建和上下文切换更快
+- 线程间交换数据无需特殊技术
+
+#### 18.1.2 线程和进程的差异
+
+线程是为了解决：为了得到多条代码执行流而复制整个内存区域的负担太重。
+
+每个进程的内存空间都由保存全局变量的「数据区」、向 malloc 等函数动态分配提供空间的堆（Heap）、函数运行时间使用的栈（Stack）构成。每个进程都有独立的这种空间，多个进程的内存结构如图所示：
+
+![](https://i.loli.net/2019/02/02/5c55aa57db3c7.png)
+
+但如果以获得多个代码执行流为目的，则不应该像上图那样完全分离内存结构，而只需分离栈区域。通过这种方式可以获得如下优势：
+
+- 上下文切换时不需要切换数据区和堆
+- 可以利用数据区和堆交换数据
+
+实际上这就是线程。线程为了保持多条代码执行流而隔开了栈区域，因此具有如下图所示的内存结构：
+
+![](https://i.loli.net/2019/02/02/5c55ab455e399.png)
+
+如图所示，多个线程共享数据区和堆。为了保持这种结构，线程将在进程内创建并运行。也就是说，进程和线程可以定义为如下形式：
+
+- 进程：在操作系统构成单独执行流的单位
+- 线程：在进程构成单独执行流的单位
+
+如果说进程在操作系统内部生成多个执行流，那么线程就在同一进程内部创建多条执行流。因此，操作系统、进程、线程之间的关系可以表示为下图：
+
+![](https://i.loli.net/2019/02/02/5c55ac20aa776.png)
+
+### 18.2 线程创建及运行
+
+可移植操作系统接口（英语：Portable Operating System Interface，缩写为POSIX）是IEEE为要在各种UNIX操作系统上运行软件，而定义API的一系列互相关联的标准的总称，其正式称呼为IEEE Std 1003，而国际标准名称为ISO/IEC 9945。此标准源于一个大约开始于1985年的项目。POSIX这个名称是由理查德·斯托曼（RMS）应IEEE的要求而提议的一个易于记忆的名称。它基本上是Portable Operating System Interface（可移植操作系统接口）的缩写，而X则表明其对Unix API的传承。
+
+Linux基本上逐步实现了POSIX兼容，但并没有参加正式的POSIX认证。
+
+微软的Windows NT声称部分实现了POSIX标准。
+
+当前的POSIX主要分为四个部分：Base Definitions、System Interfaces、Shell and Utilities和Rationale。
+
+#### 18.2.1 线程的创建和执行流程
+
+线程具有单独的执行流，因此需要单独定义线程的 main 函数，还需要请求操作系统在单独的执行流中执行该函数，完成函数功能的函数如下：
+
+```c
+#include <pthread.h>
+
+int pthread_create(pthread_t *restrict thread,
+                   const pthread_attr_t *restrict attr,
+                   void *(*start_routine)(void *),
+                   void *restrict arg);
+/*
+成功时返回 0 ，失败时返回 -1
+thread : 保存新创建线程 ID 的变量地址值。线程与进程相同，也需要用于区分不同线程的 ID
+attr : 用于传递线程属性的参数，传递 NULL 时，创建默认属性的线程
+start_routine : 相当于线程 main 函数的、在单独执行流中执行的函数地址值（函数指针）
+arg : 通过第三个参数传递的调用函数时包含传递参数信息的变量地址值
+*/
+```
+
+下面通过简单示例了解该函数功能：
+
+- [thread1.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch18/thread1.c)
+
+```c
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+void *thread_main(void *arg);
+
+int main(int argc, char *argv[])
+{
+    pthread_t t_id;
+    int thread_param = 5;
+    // 请求创建一个线程，从 thread_main 调用开始，在单独的执行流中运行。同时传递参数
+    if (pthread_create(&t_id, NULL, thread_main, (void *)&thread_param) != 0)
+    {
+        puts("pthread_create() error");
+        return -1;
+    }
+    sleep(10); //延迟进程终止时间
+    puts("end of main");
+    return 0;
+}
+void *thread_main(void *arg) //传入的参数是 pthread_create 的第四个
+{
+    int i;
+    int cnt = *((int *)arg);
+    for (int i = 0; i < cnt; i++)
+    {
+        sleep(1);
+        puts("running thread");
+    }
+    return NULL;
+}
+```
+
+编译运行：
+
+```shell
+gcc thread1.c -o tr1 -lpthread # 线程相关代码编译时需要添加 -lpthread 选项声明需要连接到线程库
+./tr1
+```
+
+运行结果：
+
+![](https://i.loli.net/2019/02/02/5c55b5eb4daf6.png)
+
+上述程序的执行如图所示：
+
+![](https://i.loli.net/2019/02/02/5c55b6943255b.png)
+
+可以看出，程序在主进程没有结束时，生成的线程每隔一秒输出一次 `running thread` ，但是如果主进程没有等待十秒，而是直接结束，这样也会强制结束线程，不论线程有没有运行完毕。
+
+那是否意味着主进程必须每次都 sleep 来等待线程执行完毕？并不需要，可以通过以下函数解决。
+
+```c
+#include <pthread.h>
+int pthread_join(pthread_t thread, void **status);
+/*
+成功时返回 0 ，失败时返回 -1
+thread : 该参数值 ID 的线程终止后才会从该函数返回
+status : 保存线程的 main 函数返回值的指针的变量地址值
+*/
+```
+
+作用就是调用该函数的进程（或线程）将进入等待状态，知道第一个参数为 ID 的线程终止为止。而且可以得到线程的 main 函数的返回值。下面是该函数的用法代码：
+
+- [thread2.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch18/thread2.c)
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+void *thread_main(void *arg);
+
+int main(int argc, char *argv[])
+{
+    pthread_t t_id;
+    int thread_param = 5;
+    void *thr_ret;
+    // 请求创建一个线程，从 thread_main 调用开始，在单独的执行流中运行。同时传递参数
+    if (pthread_create(&t_id, NULL, thread_main, (void *)&thread_param) != 0)
+    {
+        puts("pthread_create() error");
+        return -1;
+    }
+    //main函数将等待 ID 保存在 t_id 变量中的线程终止
+    if (pthread_join(t_id, &thr_ret) != 0)
+    {
+        puts("pthread_join() error");
+        return -1;
+    }
+    printf("Thread return message : %s \n", (char *)thr_ret);
+    free(thr_ret);
+    return 0;
+}
+void *thread_main(void *arg) //传入的参数是 pthread_create 的第四个
+{
+    int i;
+    int cnt = *((int *)arg);
+    char *msg = (char *)malloc(sizeof(char) * 50);
+    strcpy(msg, "Hello,I'am thread~ \n");
+    for (int i = 0; i < cnt; i++)
+    {
+        sleep(1);
+        puts("running thread");
+    }
+    return (void *)msg; //返回值是 thread_main 函数中内部动态分配的内存空间地址值
+}
+```
+
+编译运行：
+
+```shell
+gcc thread2.c -o tr2 -lpthread 
+./tr2
+```
+
+运行结果：
+
+![](https://i.loli.net/2019/02/02/5c55bd6032f1e.png)
+
+可以看出，线程输出了5次字符串，并且把返回值给了主进程
+
+下面是该函数的执行流程图：
+
+![](https://i.loli.net/2019/02/02/5c55bdd3bb3c8.png)
+
+#### 18.2.2 可在临界区内调用的函数
+
+在同步的程序设计中，临界区块（Critical section）指的是一个访问共享资源（例如：共享设备或是共享存储器）的程序片段，而这些共享资源有无法同时被多个线程访问的特性。
+
+当有线程进入临界区块时，其他线程或是进程必须等待（例如：bounded waiting 等待法），有一些同步的机制必须在临界区块的进入点与离开点实现，以确保这些共享资源是被异或的使用，例如：semaphore。
+
+只能被单一线程访问的设备，例如：打印机。
+
+一个最简单的实现方法就是当线程（Thread）进入临界区块时，禁止改变处理器；在uni-processor系统上，可以用“禁止中断（CLI）”来完成，避免发生系统调用（System Call）导致的上下文交换（Context switching）；当离开临界区块时，处理器恢复原先的状态。
+
+根据临界区是否引起问题，函数可以分为以下 2 类：
+
+- 线程安全函数（Thread-safe function）
+- 非线程安全函数（Thread-unsafe function）
+
+线程安全函数被多个线程同时调用也不会发生问题。反之，非线程安全函数被同时调用时会引发问题。但这并非有关于临界区的讨论，线程安全的函数中同样可能存在临界区。只是在线程安全的函数中，同时被多个线程调用时可通过一些措施避免问题。
+
+幸运的是，大多数标准函数都是线程安全函数。操作系统在定义非线程安全函数的同时，提供了具有相同功能的线程安全的函数。比如，第 8 章的：
+
+```c
+struct hostent *gethostbyname(const char *hostname);
+```
+
+同时，也提供了同一功能的安全函数：
+
+```c
+struct hostent *gethostbyname_r(const char *name,
+                                struct hostent *result,
+                                char *buffer,
+                                int intbuflen,
+                                int *h_errnop);
+```
+
+线程安全函数结尾通常是 `_r` 。但是使用线程安全函数会给程序员带来额外的负担，可以通过以下方法自动将 gethostbyname 函数调用改为 gethostbyname_r 函数调用。
+
+> 声明头文件前定义 `_REENTRANT` 宏。
+
+无需特意更改源代码加，可以在编译的时候指定编译参数定义宏。
+
+```shell
+gcc -D_REENTRANT mythread.c -o mthread -lpthread
+```
+
+#### 18.2.3 工作（Worker）线程模型
+
+下面的示例是计算从 1 到 10 的和，但并不是通过 main 函数进行运算，而是创建两个线程，其中一个线程计算 1 到 5 的和，另一个线程计算 6 到 10 的和，main 函数只负责输出运算结果。这种方式的线程模型称为「工作线程」。显示该程序的执行流程图：
+
+![](https://i.loli.net/2019/02/03/5c55c330e8b5b.png)
+
+下面是代码：
+
+- [thread3.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch18/thread3.c)
+
+```c
+#include <stdio.h>
+#include <pthread.h>
+void *thread_summation(void *arg);
+int sum = 0;
+
+int main(int argc, char *argv[])
+{
+    pthread_t id_t1, id_t2;
+    int range1[] = {1, 5};
+    int range2[] = {6, 10};
+
+    pthread_create(&id_t1, NULL, thread_summation, (void *)range1);
+    pthread_create(&id_t2, NULL, thread_summation, (void *)range2);
+
+    pthread_join(id_t1, NULL);
+    pthread_join(id_t2, NULL);
+    printf("result: %d \n", sum);
+    return 0;
+}
+void *thread_summation(void *arg)
+{
+    int start = ((int *)arg)[0];
+    int end = ((int *)arg)[1];
+    while (start <= end)
+    {
+        sum += start;
+        start++;
+    }
+    return NULL;
+}
+```
+
+编译运行：
+
+```shell
+gcc thread3.c -D_REENTRANT -o tr3 -lpthread
+./tr3
+```
+
+结果：
+
+![](https://i.loli.net/2019/02/03/5c55c53d70494.png)
+
+可以看出计算结果正确，两个线程都用了全局变量 sum ,证明了 2 个线程共享保存全局变量的数据区。
+
+但是本例子本省存在问题。存在临界区相关问题，可以从下面的代码看出，下面的代码和上面的代码相似，只是增加了发生临界区错误的可能性，即使在高配置系统环境下也容易产生的错误：
+
+- [thread4.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch18/thread4.c)
+
+ ```c
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <pthread.h>
+#define NUM_THREAD 100
+
+void *thread_inc(void *arg);
+void *thread_des(void *arg);
+long long num = 0;
+
+int main(int argc, char *argv[])
+{
+    pthread_t thread_id[NUM_THREAD];
+    int i;
+
+    printf("sizeof long long: %d \n", sizeof(long long));
+    for (i = 0; i < NUM_THREAD; i++)
+    {
+        if (i % 2)
+            pthread_create(&(thread_id[i]), NULL, thread_inc, NULL);
+        else
+            pthread_create(&(thread_id[i]), NULL, thread_des, NULL);
+    }
+
+    for (i = 0; i < NUM_THREAD; i++)
+        pthread_join(thread_id[i], NULL);
+
+    printf("result: %lld \n", num);
+    return 0;
+}
+
+void *thread_inc(void *arg)
+{
+    int i;
+    for (i = 0; i < 50000000; i++)
+        num += 1;
+    return NULL;
+}
+void *thread_des(void *arg)
+{
+    int i;
+    for (i = 0; i < 50000000; i++)
+        num -= 1;
+    return NULL;
+}
+ ```
+
+编译运行：
+
+```shell
+gcc thread4.c -D_REENTRANT -o tr4 -lpthread
+./tr4
+```
+
+结果：
+
+![](https://i.loli.net/2019/02/03/5c55c884e7c11.png)
+
+从图上可以看出，每次运行的结果竟然不一样。理论上来说，上面代码的最后结果应该是 0 。原因暂时不得而知，但是可以肯定的是，这对于线程的应用诗歌大问题。
+
+### 18.3 线程存在的问题和临界区
+
+下面分析 [thread4.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch18/thread4.c) 中产生问题的原因，并给出解决方案。
+
+#### 18.3.1 多个线程访问同一变量是问题
 
 
-
-
-
-
-
-
- 
 
 ## License
 
