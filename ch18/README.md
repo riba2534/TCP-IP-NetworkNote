@@ -311,7 +311,7 @@ gcc thread3.c -D_REENTRANT -o tr3 -lpthread
 
 - [thread4.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch18/thread4.c)
 
- ```c
+```c
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -357,7 +357,7 @@ void *thread_des(void *arg)
         num -= 1;
     return NULL;
 }
- ```
+```
 
 编译运行：
 
