@@ -6,7 +6,13 @@
 
 编译器版本：`g++ (Ubuntu 7.3.0-27ubuntu1~18.04) 7.3.0` 和 `gcc (Ubuntu 7.3.0-27ubuntu1~18.04) 7.3.0`
 
-所以本笔记中只学习有关于 Linux 的部分。
+所以本笔记中只学习有关于 Linux 的部分。 
+
+本项目在 GitHub 地址为：[TCP-IP-NetworkNote](https://github.com/riba2534/TCP-IP-NetworkNote)
+
+如果在阅读本笔记的过程中发现错别字，及 bug ，请向本项目提交 `PR`.
+
+笔记的 PDF 版本可以在本项目 [releases](https://github.com/riba2534/TCP-IP-NetworkNote/releases) 中找到及下载。
 
 ## 第 1 章：理解网络编程和套接字
 
