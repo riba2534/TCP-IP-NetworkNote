@@ -385,7 +385,7 @@ gcc echo_EPETserv.c -o serv
 
    答：select 函数每次调用都要传递所有的监视对象信息，而 epoll 函数仅向操作系统传递 1 次监视对象，监视范围或内容发生变化时只通知发生变化的事项。select 采用这种方法是为了保持兼容性。
 
-4. 虽然 epoll 是 select 的改进反感，但 select 也有自己的优点。在何种情况下使用 select 更加合理。
+4. 虽然 epoll 是 select 的改进方案，但 select 也有自己的优点。在何种情况下使用 select 更加合理。
 
    答：①服务器端接入者少②程序应具有兼容性。
 
