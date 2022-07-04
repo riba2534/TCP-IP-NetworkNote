@@ -83,13 +83,13 @@ socket 函数的第三个参数决定最终采用的协议。前面已经通过�
 
 > 可以应对同一协议族中存在的多个数据传输方式相同的协议，所以数据传输方式相同，但是协议不同，需要用第三个参数指定具体的协议信息。
 
-本书用的是 Ipv4 的协议族，和面向连接的数据传输，满足这两个条件的协议只有 TPPROTO_TCP ，因此可以如下调用 socket 函数创建套接字，这种套接字称为 TCP 套接字。
+本书用的是 Ipv4 的协议族，和面向连接的数据传输，满足这两个条件的协议只有 IPPROTO_TCP ，因此可以如下调用 socket 函数创建套接字，这种套接字称为 TCP 套接字。
 
 ```c
 int tcp_socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 ```
 
-SOCK_DGRAM 指的是面向消息的数据传输方式，满足上述条件的协议只有 TPPROTO_UDP 。这种套接字称为 UDP 套接字：
+SOCK_DGRAM 指的是面向消息的数据传输方式，满足上述条件的协议只有 IPPROTO_UDP 。这种套接字称为 UDP 套接字：
 
 ```c
 int udp_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
