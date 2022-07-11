@@ -68,7 +68,7 @@ sock: 用于更改选项套接字文件描述符
 level: 要更改的可选项协议层
 optname: 要更改的可选项名
 optval: 保存更改结果的缓冲地址值
-optlen: 向第四个参数传递的缓冲大小。调用函数候，该变量中保存通过第四个参数返回的可选项信息的字节数。
+optlen: 向第四个参数传递的缓冲大小。调用函数后，该变量中保存通过第四个参数返回的可选项信息的字节数。
 */
 ```
 
@@ -94,7 +94,7 @@ Socket type two: 2
 
 首先创建了一个 TCP 套接字和一个 UDP 套接字。然后通过调用 getsockopt 函数来获得当前套接字的状态。
 
-验证套接类型的 SO_TYPE 是只读可选项，因为**套接字类型只能在创建时决定，以后不能再更改**。
+用于验证套接类型的 SO_TYPE 是只读可选项，因为**套接字类型只能在创建时决定，以后不能再更改**。
 
 #### 9.1.3 `SO_SNDBUF` & `SO_RCVBUF`
 
@@ -164,9 +164,9 @@ Output buffer size: 6144
 
 假设图中主机 A 是服务器，因为是主机 A 向 B 发送 FIN 消息，故可想象成服务器端在控制台中输入 CTRL+C 。但是问题是，套接字经过四次握手后并没有立即消除，而是要经过一段时间的 Time-wait 状态。当然，只有先断开连接的（先发送 FIN 消息的）主机才经过 Time-wait 状态。因此，若服务器端先断开连接，则无法立即重新运行。套接字处在 Time-wait 过程时，相应端口是正在使用的状态。因此，就像之前验证过的，bind 函数调用过程中会发生错误。
 
-**实际上，不论是服务端还是客户端，都要经过一段时间的 Time-wait 过程。先断开连接的套接字必然会经过 Time-wait 过程，但是由于客户端套接字的端口是任意制定的，所以无需过多关注 Time-wait 状态。**
+**实际上，不论是服务端还是客户端，都要经过一段时间的 Time-wait 过程。先断开连接的套接字必然会经过 Time-wait 过程，但是由于客户端套接字的端口是任意指定的，所以无需过多关注 Time-wait 状态。**
 
-那到底为什么会有 Time-wait 状态呢，在图中假设，主机 A 向主机 B 传输 ACK 消息（SEQ 5001 , ACK 7502 ）后立刻消除套接字。但是最后这条 ACK 消息在传递过程中丢失，没有传递主机 B ，这时主机 B 就会试图重传。但是此时主机 A 已经是完全终止状态，因为主机 B 永远无法收到从主机 A 最后传来的 ACK 消息。基于这些问题的考虑，所以要设计 Time-wait 状态。
+那到底为什么会有 Time-wait 状态呢，在图中假设，主机 A 向主机 B 传输 ACK 消息（SEQ 5001 , ACK 7502 ）后立刻消除套接字。但是最后这条 ACK 消息在传递过程中丢失，没有传递主机 B ，这时主机 B 就会试图重传。但是此时主机 A 已经是完全终止状态，因此主机 B 永远无法收到从主机 A 最后传来的 ACK 消息。基于这些问题的考虑，所以要设计 Time-wait 状态。
 
 #### 9.2.3 地址再分配
 
@@ -176,7 +176,7 @@ Time-wait 状态看似重要，但是不一定讨人喜欢。如果系统发生�
 
 从图上可以看出，在主机 A 四次握手的过程中，如果最后的数据丢失，则主机 B 会认为主机 A 未能收到自己发送的 FIN 信息，因此重传。这时，收到的 FIN 消息的主机 A 将重启  Time-wait 计时器。因此，如果网络状况不理想， Time-wait 将持续。
 
-解决方案就是在套接字的可选项中更改 SO_REUSEADDR 的状态。适当调整该参数，可将 Time-wait 状态下的套接字端口号重新分配给新的套接字。SO_REUSEADDR 的默认值为 0.这就意味着无法分配 Time-wait 状态下的套接字端口号。因此需要将这个值改成 1 。具体作法已在示例 [reuseadr_eserver.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch09/reuseadr_eserver.c) 给出，只需要把注释掉的东西接解除注释即可。
+解决方案就是在套接字的可选项中更改 SO_REUSEADDR 的状态。适当调整该参数，可将 Time-wait 状态下的套接字端口号重新分配给新的套接字。SO_REUSEADDR 的默认值为 0.这就意味着无法分配 Time-wait 状态下的套接字端口号。因此需要将这个值改成 1 。具体作法已在示例 [reuseadr_eserver.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch09/reuseadr_eserver.c) 给出，只需要把注释掉的东西解除注释即可。
 
 ```c
 optlen = sizeof(option);
@@ -217,7 +217,7 @@ setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&opt_val, sizeof(opt_val));
 
 ```c
 opt_len = sizeof(opt_val);
-getsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&opt_val, opt_len);
+getsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&opt_val, &opt_len);
 ```
 
 如果正在使用`Nagle` 算法，那么 opt_val 值为 0，如果禁用则为 1.
