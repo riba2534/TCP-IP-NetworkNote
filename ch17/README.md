@@ -19,11 +19,11 @@ select 性能上最大的弱点是：每次传递监视对象信息，准确的�
 
 > 仅向操作系统传递一次监视对象，监视范围或内容发生变化时只通知发生变化的事项
 
-这样就无需每次调用 select 函数时都想操作系统传递监视对象信息，但是前提操作系统支持这种处理方式。Linux 的支持方式是 epoll ，Windows 的支持方式是 IOCP。
+这样就无需每次调用 select 函数时都向操作系统传递监视对象信息，但是前提操作系统支持这种处理方式。Linux 的支持方式是 epoll ，Windows 的支持方式是 IOCP。
 
 #### 17.1.2 select 也有有点
 
-select 的兼容性比较高，这样就可以支持很多的操作系统，不受平台的限制，使用 select 函数满足以下两个条件：
+select 的兼容性比较高，这样就可以支持很多的操作系统，不受平台的限制，满足以下两个条件使可以使用 select 函数：
 
 - 服务器接入者少
 - 程序应该具有兼容性
@@ -83,7 +83,7 @@ size：epoll 实例的大小
 
 调用 epoll_create 函数时创建的文件描述符保存空间称为「epoll 例程」，但有些情况下名称不同，需要稍加注意。通过参数 size 传递的值决定 epoll 例程的大小，但该值只是向操作系统提出的建议。换言之，size 并不用来决定 epoll 的大小，而仅供操作系统参考。
 
-> Linux 2.6.8 之后的内核将完全传入 epoll_create 函数的 size 函数，因此内核会根据情况调整 epoll 例程大小。但是本书程序并没有忽略 size
+> Linux 2.6.8 之后的内核将完全忽略传入 epoll_create 函数的 size 函数，因此内核会根据情况调整 epoll 例程大小。但是本书程序并没有忽略 size
 
 epoll_create 函数创建的资源与套接字相同，也由操作系统管理。因此，该函数和创建套接字的情况相同，也会返回文件描述符，也就是说返回的文件描述符主要用于区分 epoll 例程。需要终止时，与其他文件描述符相同，也要调用 close 函数
 
@@ -97,7 +97,7 @@ int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
 /*
 成功时返回 0 ，失败时返回 -1
 epfd：用于注册监视对象的 epoll 例程的文件描述符
-op：用于制定监视对象的添加、删除或更改等操作
+op：用于指定监视对象的添加、删除或更改等操作
 fd：需要注册的监视对象文件描述符
 event：监视对象的事件类型
 */
@@ -119,7 +119,7 @@ epoll_ctl(A,EPOLL_CTL_ADD,B,C);
 epoll_ctl(A,EPOLL_CTL_DEL,B,NULL);
 ```
 
-上述语句中第二个参数意味这「删除」，有以下含义：
+上述语句中第二个参数意味着「删除」，有以下含义：
 
 > 从 epoll 例程 A 中删除文件描述符 B
 
@@ -131,7 +131,7 @@ epoll_ctl(A,EPOLL_CTL_DEL,B,NULL);
 - EPOLL_CTL_DEL：从 epoll 例程中删除文件描述符
 - EPOLL_CTL_MOD：更改注册的文件描述符的关注事件发生情况
 
-epoll_event 结构体用于保存事件的文件描述符结合。但也可以在 epoll 例程中注册文件描述符时，用于注册关注的事件。该函数中 epoll_event 结构体的定义并不显眼，因此通过掉英语剧说明该结构体在 epoll_ctl 函数中的应用。
+epoll_event 结构体用于保存事件的文件描述符结合。但也可以在 epoll 例程中注册文件描述符时，用于注册关注的事件。该函数中 epoll_event 结构体的定义并不显眼，因此通过调用语句说明该结构体在 epoll_ctl 函数中的应用。
 
 ```c
 struct epoll_event event;
@@ -152,7 +152,7 @@ epoll_ctl(epfd,EPOLL_CTL_ADD,sockfd,&event);
 - EPOLLET：以边缘触发的方式得到事件通知
 - EPOLLONESHOT：发生一次事件后，相应文件描述符不再收到事件通知。因此需要向 epoll_ctl 函数的第二个参数传递 EPOLL_CTL_MOD ，再次设置事件。
 
-可通过位运算同事传递多个上述参数。
+可通过位或运算同时传递多个上述参数。
 
 #### 17.1.6 epoll_wait
 
@@ -162,7 +162,7 @@ epoll_ctl(epfd,EPOLL_CTL_ADD,sockfd,&event);
 #include <sys/epoll.h>
 int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout);
 /*
-成功时返回发生事件的文件描述符，失败时返回 -1
+成功时返回发生事件的文件描述符个数，失败时返回 -1
 epfd : 表示事件发生监视范围的 epoll 例程的文件描述符
 events : 保存发生事件的文件描述符集合的结构体地址值
 maxevents : 第二个参数中可以保存的最大事件数
@@ -182,7 +182,7 @@ event_cnt=epoll_wait(epfd,ep_events,EPOLL_SIZE,-1);
 ...
 ```
 
-调用函数后，返回发生事件的文件描述符，同时在第二个参数指向的缓冲中保存发生事件的文件描述符集合。因此，无需像 select 一样插入针对所有文件描述符的循环。
+调用函数后，返回发生事件的文件描述符个数，同时在第二个参数指向的缓冲中保存发生事件的文件描述符集合。因此，无需像 select 一样插入针对所有文件描述符的循环。
 
 #### 17.1.7 基于 epoll 的回声服务器端
 
@@ -252,7 +252,7 @@ gcc echo_EPLTserv.c -o serv
 
 ![](https://i.loli.net/2019/02/01/5c540825ae415.png)
 
-从结果可以看出，每当收到客户端数据时，都回注册该事件，并因此调用 epoll_wait 函数。
+从结果可以看出，每当收到客户端数据时，都会注册该事件，并因此调用 epoll_wait 函数。
 
 下面的代码是修改后的边缘触发方式的代码，仅仅是把上面的代码改为：
 
@@ -310,7 +310,7 @@ cmd : 表示函数调用目的
 
 ```C
 int flag = fcntl(fd,F_GETFL,0);
-fcntl(fd,F_SETFL | O_NONBLOCK)
+fcntl(fd, F_SETFL, flag | O_NONBLOCK);
 ```
 
 通过第一条语句，获取之前设置的属性信息，通过第二条语句在此基础上添加非阻塞 O_NONBLOCK 标志。调用 read/write 函数时，无论是否存在数据，都会形成非阻塞文件（套接字）。fcntl 函数的适用范围很广。
