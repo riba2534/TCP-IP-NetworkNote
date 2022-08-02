@@ -43,7 +43,7 @@ setsockopt(send_sock,IPPROTO_IP,IP_MULTICAST_TTL,(void*)&time_live,sizeof(time_l
 ...
 ```
 
-加入多播组也通过设置设置套接字可选项来完成。加入多播组相关的协议层为 IPPROTO_IP，选项名为 IP_ADD_MEMBERSHIP 。可通过如下代码加入多播组：
+加入多播组也通过设置套接字可选项来完成。加入多播组相关的协议层为 IPPROTO_IP，选项名为 IP_ADD_MEMBERSHIP 。可通过如下代码加入多播组：
 
 ```c
 int recv_sock;
@@ -53,7 +53,7 @@ recv_sock=socket(PF_INET,SOCK_DGRAM,0);
 ...
 join_adr.imr_multiaddr.s_addr="多播组地址信息";
 join_adr.imr_interface.s_addr="加入多播组的主机地址信息";
-setsockopt(recv_sock,IPPROTO_IP,IP_ADD_MEMBERSHIP,(void*)&join_adr,sizeof(time_live);
+setsockopt(recv_sock,IPPROTO_IP,IP_ADD_MEMBERSHIP,(void*)&join_adr,sizeof(join_adr);
 ...
 ```
 

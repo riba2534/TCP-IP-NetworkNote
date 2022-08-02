@@ -14,7 +14,7 @@ ssize_t send(int sockfd, const void *buf, size_t nbytes, int flags);
 /*
 成功时返回发送的字节数，失败时返回 -1
 sockfd: 表示与数据传输对象的连接的套接字和文件描述符
-buf: 保存带传输数据的缓冲地址值
+buf: 保存待传输数据的缓冲地址值
 nbytes: 待传输字节数
 flags: 传输数据时指定的可选项信息
 */
@@ -34,7 +34,7 @@ flags: 接收数据时指定的可选项参数
 */
 ```
 
-send 和 recv 函数都是最后一个参数是收发数据的可选项，该选项可以用位或（bit OR）运算符（| 运算符）同时传递多个信息。
+send 和 recv 函数的最后一个参数是收发数据的可选项，该选项可以用位或（bit OR）运算符（| 运算符）同时传递多个信息。
 
 send & recv 函数的可选项意义：
 
@@ -86,7 +86,7 @@ fcntl(recv_sock, F_SETOWN, getpid());
 
 的确，通过 MSG_OOB 并不会加快传输速度，而通过信号处理函数 urg_handler 也只能读取一个字节。剩余数据只能通过未设置 MSG_OOB 可选项的普通输入函数读取。因为 TCP 不存在真正意义上的「外带数据」。实际上，MSG_OOB 中的 OOB 指的是 Out-of-band ，而「外带数据」的含义是：
 
-> 通过去完全不同的通信路径传输的数据
+> 通过完全不同的通信路径传输的数据
 
 即真正意义上的 Out-of-band 需要通过单独的通信路径高速传输数据，但是 TCP 不另外提供，只利用 TCP 的紧急模式（Urgent mode）进行传输。
 
@@ -102,7 +102,7 @@ MSG_OOB 的真正意义在于督促数据接收对象尽快处理数据。这是
 send(sock, "890", strlen("890"), MSG_OOB);
 ```
 
-图上是调用这个函数的缓冲状态。如果缓冲最左端的位置视作偏移量 0 。字符 0 保存于偏移量 2 的位置。另外，字符 0 右侧偏移量为 3 的位置存有紧急指针（Urgent Pointer）。紧急指针指向紧急消息的下一个位置（偏移量加一），同时向对方主机传递一下信息：
+图上是调用这个函数的缓冲状态。如果缓冲最左端的位置视作偏移量 0 。字符 0 保存于偏移量 2 的位置。另外，字符 0 右侧偏移量为 3 的位置存有紧急指针（Urgent Pointer）。紧急指针指向紧急消息的下一个位置（偏移量加一），同时向对方主机传递以下信息：
 
 > 紧急指针指向的偏移量为 3 之前的部分就是紧急消息。
 
@@ -121,7 +121,7 @@ TCP 数据包实际包含更多信息。TCP 头部包含如下两种信息：
 
 #### 13.1.4 检查输入缓冲
 
-同时设置 MSG_PEEK 选项和 MSG_DONTWAIT 选项，以验证输入缓冲是否存在接收的数据。设置 MSG_PEEK 选项并调用 recv 函数时，即使读取了输入缓冲的数据也不会删除。因此，该选项通常与 MSG_DONTWAIT 合作，用于调用以非阻塞方式验证待读数据存与否的函数。下面的示例是二者的含义：
+同时设置 MSG_PEEK 选项和 MSG_DONTWAIT 选项，以验证输入缓冲是否存在接收的数据。设置 MSG_PEEK 选项并调用 recv 函数时，即使读取了输入缓冲的数据也不会删除。因此，该选项通常与 MSG_DONTWAIT 合作，用于以非阻塞方式验证待读数据存在与否。下面的示例是二者的含义：
 
 - [peek_recv.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch13/peek_recv.c)
 - [peek_send.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch13/peek_send.c)
@@ -225,9 +225,9 @@ Write bytes: 7
 ssize_t readv(int filedes, const struct iovc *iov, int iovcnt);
 /*
 成功时返回接收的字节数，失败时返回 -1
-filedes: 表示数据传输对象的套接字文件描述符。但该函数并不仅限于套接字，因此，可以像 read 一样向向其传递文件或标准输出描述符.
-iov: iovec 结构体数组的地址值，结构体 iovec 中包含待发送数据的位置和大小信息
-iovcnt: 向第二个参数传递数组长度
+filedes: 表示数据传输对象的套接字文件描述符。但该函数并不仅限于套接字，因此，可以像 write 一样向向其传递文件或标准输出描述符.
+iov: iovec 结构体数组的地址值，结构体 iovec 中包含待数据保存的位置和大小信息
+iovcnt: 第二个参数中数组的长度
 */
 ```
 
