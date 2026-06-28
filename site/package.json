@@ -1,0 +1,14 @@
+{
+  "name": "tcp-ip-network-notes-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gen": "node scripts/build.mjs",
+    "dev": "npm run gen && vitepress dev",
+    "build": "npm run gen && vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^1.5.0"
+  }
+}

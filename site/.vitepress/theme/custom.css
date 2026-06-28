@@ -1,0 +1,65 @@
+/* TCP/IP 网络编程笔记 — 电子书排版 */
+
+:root {
+  --vp-font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --vp-font-family-mono: 'JetBrains Mono', 'Fira Code', Menlo, Consolas,
+    'Courier New', monospace;
+  --content-max-width: 880px;
+}
+
+/* 正文段落用中文衬线，提升长文阅读舒适度 */
+.vp-doc p,
+.vp-doc li {
+  font-family: 'Source Han Serif SC', 'Noto Serif CJK SC', 'Songti SC', STSong,
+    'STZhongsong', serif;
+  line-height: 1.85;
+  letter-spacing: 0.02em;
+}
+
+/* 标题与 UI 用无衬线，保持清晰 */
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3,
+.vp-doc h4 {
+  font-family: var(--vp-font-family-base);
+}
+
+/* 代码块 */
+.vp-doc pre {
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.vp-doc code {
+  font-family: var(--vp-font-family-mono);
+}
+
+/* 行内代码微调 */
+.vp-doc :not(pre) > code {
+  font-size: 0.875em;
+}
+
+/* 图片居中带阴影圆角 */
+.vp-doc img {
+  display: block;
+  margin: 1.5rem auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  max-width: 100%;
+}
+
+/* 表格交替行底色 */
+.vp-doc table {
+  display: block;
+  overflow-x: auto;
+}
+
+/* 源码页"返回本章"链接 */
+.vp-doc .back-to-chapter {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  font-family: var(--vp-font-family-base);
+  font-size: 0.9rem;
+  color: var(--vp-c-brand-1);
+}

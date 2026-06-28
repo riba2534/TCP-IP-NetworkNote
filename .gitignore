@@ -1,0 +1,10 @@
+# 网站构建
+site/node_modules/
+site/.vitepress/dist/
+site/.vitepress/cache/
+
+# 脚本生成的章节内容（每次构建重新生成）
+site/ch[0-9][0-9]/
+
+# 脚本复制的图片
+site/public/images/
