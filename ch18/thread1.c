@@ -19,7 +19,6 @@ int main(int argc, char *argv[])
 }
 void *thread_main(void *arg) //传入的参数是 pthread_create 的第四个
 {
-    int i;
     int cnt = *((int *)arg);
     for (int i = 0; i < cnt; i++)
     {

@@ -51,7 +51,8 @@ int main(int argc, char *argv[])
         printf("Message from server: %s", message);
     }
     fclose(writefp);
-    fclose(readfp);
+    /* readfp 与 writefp 共用同一文件描述符，fclose(writefp) 已关闭底层套接字，
+       再次 fclose(readfp) 属冗余关闭（返回 EBADF）；半关闭问题见第 16 章 dup 方案 */
     return 0;
 }
 

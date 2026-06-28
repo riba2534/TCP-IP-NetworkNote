@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     setnonblockingmode(serv_sock);
     event.events = EPOLLIN; //需要读取数据的情况
     event.data.fd = serv_sock;
-    epoll_ctl(epfd, EPOLL_CTL_ADD, serv_sock, &event); //例程epfd 中添加文件描述符 serv_sock，目的是监听 enevt 中的事件
+    epoll_ctl(epfd, EPOLL_CTL_ADD, serv_sock, &event); //例程epfd 中添加文件描述符 serv_sock，目的是监听 event 中的事件
 
     while (1)
     {
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
                     }
                     else if (str_len < 0)
                     {
-                        if (errno == EAGAIN) //read 返回-1 且 errno 值为 EAGAIN ，意味读取了输入缓冲的全部数据
+                        if (errno == EAGAIN) //read 返回-1 且 errno 值为 EAGAIN ，意味着已读取输入缓冲的全部数据
                             break;
                     }
                     else

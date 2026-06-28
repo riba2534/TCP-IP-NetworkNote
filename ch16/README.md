@@ -4,7 +4,7 @@
 
 ### 16.1 分离 I/O 流
 
-「分离 I/O 流」是一种常用表达。有 I/O 工具可区分二者，无论采用哪种方法，都可以认为是分离了 I/O 流。
+「分离 I/O 流」是一种常用表达。只要用 I/O 工具区分输入和输出，无论采用哪种方法，都可以认为是分离了 I/O 流。
 
 #### 16.1.1 2 次 I/O 流分离
 
@@ -34,12 +34,12 @@
 shutdown(sock,SHUT_WR);
 ```
 
-当时说过调用 shutdown 函数的基于半关闭的 EOF 传递方法。第十章的 [echo_mpclient.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch10/echo_mpclient.c) 添加了半关闭的相关代码。但是还没有讲采用 fdopen 函数怎么半关闭。那么是否是通过 fclose 函数关闭流呢？我们先试试
+当时说过调用 shutdown 函数的基于半关闭的 EOF 传递方法。第十章的 [echo_mpclient.c](../ch10/echo_mpclient.c) 添加了半关闭的相关代码。但是还没有讲采用 fdopen 函数怎么半关闭。那么是否是通过 fclose 函数关闭流呢？我们先试试
 
-下面是服务端和客户端码：
+下面是服务端和客户端代码：
 
-- [sep_clnt.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch16/sep_clnt.c)
-- [sep_serv.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch16/sep_serv.c)
+- [sep_clnt.c](sep_clnt.c)
+- [sep_serv.c](sep_serv.c)
 
 编译运行：
 
@@ -60,17 +60,17 @@ gcc sep_serv.c -o serv
 
 ### 16.2 文件描述符的复制和半关闭
 
-#### 16.2.1 终止「流」时无法半关闭原因
+#### 16.2.1 终止「流」时无法半关闭的原因
 
-下面的图描述的是服务端代码中的两个FILE 指针、文件描述符和套接字中的关系。
+下面的图描述的是服务端代码中的两个 FILE 指针、文件描述符和套接字之间的关系。
 
 ![](images/5c5121da89955.png)
 
-从图中可以看到，两个指针都是基于同一文件描述符创建的。因此，针对于任何一个 FILE 指针调用 fclose 函数都会关闭文件描述符，如图所示：
+从图中可以看到，两个指针都是基于同一文件描述符创建的。因此，针对任何一个 FILE 指针调用 fclose 函数都会关闭文件描述符，如图所示：
 
 ![](images/5c51224051802.png)
 
-从图中看到，销毁套接字时再也无法进行数据交换。那如何进入可以进入但是无法输出的半关闭状态呢？如下图所示：
+从图中看到，销毁套接字时再也无法进行数据交换。那如何进入可以接收输入但无法输出的半关闭状态呢？如下图所示：
 
 ![](images/5c5122a45c5f1.png)
 
@@ -86,7 +86,7 @@ gcc sep_serv.c -o serv
 
 #### 16.2.2 复制文件描述符
 
-与调用 fork 函数不同，调用 fork 函数将复制整个进程，此处讨论的是同一进程内完成对文件描述符的复制。如图：
+与 fork 函数不同，fork 会复制整个进程，而此处讨论的是在同一进程内复制文件描述符。如图：
 
 ![](images/5c512579c45b6.png)
 
@@ -107,9 +107,9 @@ fd2 : 明确指定的文件描述符的整数值
 */
 ```
 
-dup2 函数明确指定复制的文件描述符的整数值。向其传递大于 0 且小于进程能生成的最大文件描述符值时，该值将成为复制出的文件描述符值。下面是代码示例：
+dup2 函数明确指定复制的文件描述符的整数值。向其传递大于等于 0 且小于进程允许的最大文件描述符值时，该值将成为复制出的文件描述符值。下面是代码示例：
 
-- [dup.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch16/dup.c)
+- [dup.c](dup.c)
 
 ```c
 #include <stdio.h>
@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
 
 编译运行：
 
-```
+```shell
 gcc dup.c -o dup
 ./dup
 ```
@@ -151,13 +151,13 @@ gcc dup.c -o dup
 
 #### 16.2.4 复制文件描述符后「流」的分离
 
-下面更改 [sep_clnt.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch16/sep_clnt.c) 和 [sep_serv.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch16/sep_serv.c) 可以使得让它正常工作，正常工作是指通过服务器的半关闭状态接收客户端最后发送的字符串。
+下面更改 [sep_clnt.c](sep_clnt.c) 和 [sep_serv.c](sep_serv.c) 使其正常工作，这里的正常工作是指让服务器通过半关闭状态接收客户端最后发送的字符串。
 
 下面是代码：
 
-- [sep_serv2.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch16/sep_serv2.c)
+- [sep_serv2.c](sep_serv2.c)
 
-这个代码可以与 [sep_clnt.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch16/sep_clnt.c) 配合起来使用，编译过程和上面一样，运行结果为：
+这个代码可以与 [sep_clnt.c](sep_clnt.c) 配合起来使用，编译过程和上面一样，运行结果为：
 
 ![](images/5c513d54a27e0.png)
 

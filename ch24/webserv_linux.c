@@ -17,10 +17,9 @@ void error_handling(char *message);
 
 int main(int argc, char *argv[])
 {
-    int serv_sock, clnt_sock;
+    int serv_sock;
     struct sockaddr_in serv_adr, clnt_adr;
     int clnt_adr_size;
-    char buf[BUF_SIZE];
     pthread_t t_id;
     if (argc != 2)
     {
@@ -41,10 +40,11 @@ int main(int argc, char *argv[])
     while (1)
     {
         clnt_adr_size = sizeof(clnt_adr);
-        clnt_sock = accept(serv_sock, (struct sockaddr *)&clnt_adr, &clnt_adr_size);
+        int *clnt_sock_p = malloc(sizeof(int));
+        *clnt_sock_p = accept(serv_sock, (struct sockaddr *)&clnt_adr, &clnt_adr_size);
         printf("Connection Request : %s:%d\n",
                inet_ntoa(clnt_adr.sin_addr), ntohs(clnt_adr.sin_port));
-        pthread_create(&t_id, NULL, request_handler, &clnt_sock);
+        pthread_create(&t_id, NULL, request_handler, clnt_sock_p);
         pthread_detach(t_id);
     }
     close(serv_sock);
@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
 void *request_handler(void *arg)
 {
     int clnt_sock = *((int *)arg);
+    free(arg);
     char req_line[SMALL_BUF];
     FILE *clnt_read;
     FILE *clnt_write;
@@ -70,7 +71,7 @@ void *request_handler(void *arg)
         send_error(clnt_write);
         fclose(clnt_read);
         fclose(clnt_write);
-        return;
+        return NULL;
     }
     strcpy(method, strtok(req_line, " /"));
     strcpy(file_name, strtok(NULL, " /"));
@@ -80,7 +81,7 @@ void *request_handler(void *arg)
         send_error(clnt_write);
         fclose(clnt_read);
         fclose(clnt_write);
-        return;
+        return NULL;
     }
     fclose(clnt_read);
     send_data(clnt_write, ct, file_name);
@@ -99,6 +100,7 @@ void send_data(FILE *fp, char *ct, char *file_name)
     if (send_file == NULL)
     {
         send_error(fp);
+        fclose(fp);
         return;
     }
 
@@ -108,7 +110,7 @@ void send_data(FILE *fp, char *ct, char *file_name)
     fputs(cnt_len, fp);
     fputs(cnt_type, fp);
 
-    //传输请求数据
+    //传输响应体数据
     while (fgets(buf, BUF_SIZE, send_file) != NULL)
     {
         fputs(buf, fp);
@@ -121,9 +123,13 @@ char *content_type(char *file)
 {
     char extension[SMALL_BUF];
     char file_name[SMALL_BUF];
+    char *ext;
     strcpy(file_name, file);
     strtok(file_name, ".");
-    strcpy(extension, strtok(NULL, "."));
+    ext = strtok(NULL, ".");
+    if (ext == NULL)
+        return "text/plain";
+    strcpy(extension, ext);
 
     if (!strcmp(extension, "html") || !strcmp(extension, "htm"))
         return "text/html";

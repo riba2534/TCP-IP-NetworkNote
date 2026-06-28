@@ -4,7 +4,7 @@
 int main()
 {
     FILE *fp;
-    int fd = open("data.dat", O_WRONLY | O_CREAT | O_TRUNC); //创建文件并返回文件描述符
+    int fd = open("data.dat", O_WRONLY | O_CREAT | O_TRUNC, 0644); //创建文件并返回文件描述符
     if (fd == -1)
     {
         fputs("file open error", stdout);

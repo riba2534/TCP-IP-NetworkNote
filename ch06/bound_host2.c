@@ -16,7 +16,6 @@ int main(int argc, char *argv[])
     char msg3[] = "Nice to meet you";
 
     struct sockaddr_in your_adr;
-    socklen_t your_adr_sz;
     if (argc != 3)
     {
         printf("Usage : %s <IP> <port>\n", argv[0]);

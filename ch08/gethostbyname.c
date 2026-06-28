@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     struct hostent *host;
     if (argc != 2)
     {
-        printf("Usage : %s <addr>\n", argv[0]);
+        printf("Usage : %s <domain>\n", argv[0]);
         exit(1);
     }
     // 把参数传递给函数，返回结构体
@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
         error_handling("gethost... error");
     // 输出官方域名
     printf("Official name: %s \n", host->h_name);
-    // Aliases 貌似是解析的 cname 域名？
+    // Aliases 为该主机的别名（常对应 DNS 的 CNAME 记录）
     for (i = 0; host->h_aliases[i]; i++)
         printf("Aliases %d: %s \n", i + 1, host->h_aliases[i]);
     //看看是不是ipv4

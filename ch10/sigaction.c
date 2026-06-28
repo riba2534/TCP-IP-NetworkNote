@@ -11,10 +11,9 @@ void timeout(int sig)
 
 int main(int argc, char *argv[])
 {
-    int i;
     struct sigaction act;
     act.sa_handler = timeout;    //保存函数指针
-    sigemptyset(&act.sa_mask);   //将 sa_mask 函数的所有位初始化成0
+    sigemptyset(&act.sa_mask);   //将 sa_mask 成员的所有位初始化成0
     act.sa_flags = 0;            //sa_flags 同样初始化成 0
     sigaction(SIGALRM, &act, 0); //注册 SIGALRM 信号的处理器。
 

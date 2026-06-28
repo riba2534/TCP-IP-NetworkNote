@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
     int i;
     signal(SIGALRM, timeout); //注册信号及相应处理器
     signal(SIGINT, keycontrol);
-    alarm(2); //预约 2 秒候发生 SIGALRM 信号
+    alarm(2); //预约 2 秒后发生 SIGALRM 信号
 
     for (i = 0; i < 3; i++)
     {

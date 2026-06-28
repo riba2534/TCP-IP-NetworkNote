@@ -4,7 +4,7 @@
 
 ### 1.1 理解网络编程和套接字
 
-#### 1.1.1构建打电话套接字
+#### 1.1.1 构建打电话套接字
 
 以电话机打电话的方式来理解套接字。
 
@@ -32,7 +32,7 @@ int socket(int domain, int type, int protocol);
 
 ```c
 #include <sys/socket.h>
-int bind(int sockfd, struct sockaddr *myaddr, socklen_t addrlen);
+int bind(int sockfd, const struct sockaddr *myaddr, socklen_t addrlen);
 //成功时返回0，失败时返回-1
 ```
 
@@ -40,7 +40,7 @@ int bind(int sockfd, struct sockaddr *myaddr, socklen_t addrlen);
 
 **调用 listen 函数（连接电话线）时进行的对话**：
 
-> 问：已架设完电话机后是否只需链接电话线？
+> 问：已架设完电话机后是否只需连接电话线？
 >
 > 答：对，只需要连接就能接听电话。
 
@@ -62,11 +62,11 @@ int listen(int sockfd, int backlog);
 
 ```c
 #include <sys/socket.h>
-int accept(int sockfd,struct sockaddr *addr,socklen_t *addrlen);
+int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 //成功时返回文件描述符，失败时返回-1
 ```
 
-网络编程中和接受连接请求的套接字创建过程可整理如下：
+网络编程中接受连接请求的套接字创建过程可整理如下：
 
 1. 第一步：调用 socket 函数创建套接字。
 2. 第二步：调用 bind 函数分配IP地址和端口号。
@@ -106,11 +106,11 @@ gcc hello_client.c -o hclient
 ./hclient 127.0.0.1 9190
 ```
 
-运行的时候，首先在 9190 端口启动服务，然后 hserver 就会一直等待客户端进行连接，当客户端连接位于本地的 IP 为 127.0.0.1 的地址的 9190 端口时，客户端就会收到服务端的回应，输出`Hello World!`
+运行的时候，首先在 9190 端口启动服务，然后 hserver 就会一直等待客户端进行连接，当客户端连接到本地地址 127.0.0.1 的 9190 端口时，客户端就会收到服务端的回应，输出`Hello World!`
 
 ### 1.2 基于 Linux 的文件操作
 
-讨论套接字的过程中突然谈及文件也许有些奇怪。但是对于 Linux 而言，socket 操作与文件操作没有区别，因而有必要详细了解文件。在 Linux 世界里，socket 也被认为是文件的一种，因此在网络数据传输过程中自然可以使用 I/O 的相关函数。Windows 与 Linux 不同，是要区分 socket 和文件的。因此在 Windows 中需要调用特殊的数据传输相关函数。
+讨论套接字的过程中突然谈及文件也许有些奇怪。但是对于 Linux 而言，socket 操作与文件操作没有区别，因而有必要详细了解文件。在 Linux 世界里，socket 也被认为是文件的一种，因此在网络数据传输过程中自然可以使用 I/O 的相关函数。Windows 与 Linux 不同，是要区分套接字和文件的。因此在 Windows 中需要调用特殊的数据传输相关函数。
 
 #### 1.2.1 底层访问和文件描述符
 
@@ -126,7 +126,7 @@ gcc hello_client.c -o hclient
 
 文件描述符也被称为「文件句柄」，但是「句柄」主要是 Windows 中的术语。因此，在本书中如果涉及 Windows 平台将使用「句柄」，如果是 Linux 将使用「描述符」。
 
-#### 1.2.2 打开文件:
+#### 1.2.2 打开文件
 
 ```c
 #include <sys/types.h>
@@ -229,7 +229,7 @@ file data: Let's go!
 
 #### 1.2.6 文件描述符与套接字
 
-下面将同时创建文件和套接字，并用整数型态比较返回的文件描述符的值.
+下面将同时创建文件和套接字，并用整数类型比较返回的文件描述符的值。
 
 代码见：[fd_seri.c](fd_seri.c)
 
@@ -244,8 +244,8 @@ gcc fd_seri.c -o fds
 
 ```
 file descriptor 1: 3
-file descriptor 2: 15
-file descriptor 3: 16
+file descriptor 2: 4
+file descriptor 3: 5
 ```
 
 ### 1.3 基于 Windows 平台的实现
@@ -262,17 +262,17 @@ file descriptor 3: 16
 
 1. 套接字在网络编程中的作用是什么？为何称它为套接字？
 
-   > 答：操作系统会提供「套接字」（socket）的部件，套接字是网络数据传输用的软件设备。因此，「网络编程」也叫「套接字编程」。「套接字」就是用来连接网络的工具。
+   > 答：操作系统会提供「套接字」（socket）的部件，套接字是网络数据传输用的软件设备，因此「网络编程」也叫「套接字编程」。「套接字」是 socket 的中文译名，socket 原意为「插座、插口」，在网络编程中引申为数据通信的连接端点，即用来连接网络的工具。
 
 2. 在服务器端创建套接字以后，会依次调用 listen 函数和 accept 函数。请比较二者作用。
 
-   > 答：调用 listen 函数将套接字转换成可受连接状态（监听），调用 accept 函数受理连接请求。如果在没有连接请求的情况下调用该函数，则不会返回，直到有连接请求为止。
+   > 答：调用 listen 函数将套接字转换成可接受连接状态（监听），调用 accept 函数受理连接请求。如果在没有连接请求的情况下调用该函数，则不会返回，直到有连接请求为止。
 
 3. Linux 中，对套接字数据进行 I/O 时可以直接使用文件 I/O 相关函数；而在 Windows 中则不可以。原因为何？
 
-   > 答：在 Linux 中，套接字（socket）被视为文件的一种，遵循「一切皆文件」的设计哲学。因此可以使用标准的文件 I/O 函数（如 `read`、`write`、`close`）对套接字进行操作。而在 Windows 中，套接字和文件是区分开的，套接字操作需要使用专门的 Winsock 函数（如 `send`、`recv`、`closesocket`），不能使用文件 I/O 函数（如 `ReadFile`、`WriteFile`）直接操作套接字。
+   > 答：在 Linux 中，套接字（socket）被视为文件的一种，遵循「一切皆文件」的设计哲学。因此可以使用标准的文件 I/O 函数（如 `read`、`write`、`close`）对套接字进行操作。而在 Windows 中，套接字和文件是区分开的，套接字操作需要使用专门的 Winsock 函数（如 `send`、`recv`、`closesocket`），通常不使用文件 I/O 函数（如 `ReadFile`、`WriteFile`）直接操作套接字。
 
-4. 创建套接字后一般会给他分配地址，为什么？为了完成地址分配需要调用哪个函数？
+4. 创建套接字后一般会给它分配地址，为什么？为了完成地址分配需要调用哪个函数？
 
    > 答：套接字被创建之后，只有为其分配了IP地址和端口号后，客户端才能够通过IP地址及端口号与服务器端建立连接，需要调用 bind 函数来完成地址分配。
 

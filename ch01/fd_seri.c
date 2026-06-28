@@ -8,7 +8,7 @@ int main()
     int fd1, fd2, fd3;
     //创建一个文件和两个套接字
     fd1 = socket(PF_INET, SOCK_STREAM, 0);
-    fd2 = open("test.dat", O_CREAT | O_WRONLY | O_TRUNC);
+    fd2 = open("test.dat", O_CREAT | O_WRONLY | O_TRUNC, 0644);
     fd3 = socket(PF_INET, SOCK_DGRAM, 0);
     //输出之前创建的文件描述符的整数值
     printf("file descriptor 1: %d\n", fd1);

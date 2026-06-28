@@ -9,7 +9,7 @@ int main()
     int fd;
     char buf[] = "Let's go!\n";
     // O_CREAT | O_WRONLY | O_TRUNC 是文件打开模式，将创建新文件，并且只能写。如存在 data.txt 文件，则清空文件中的全部数据。
-    fd = open("data.txt", O_CREAT | O_WRONLY | O_TRUNC);
+    fd = open("data.txt", O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (fd == -1)
         error_handling("open() error!");
     printf("file descriptor: %d \n", fd);

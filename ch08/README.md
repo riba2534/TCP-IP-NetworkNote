@@ -22,7 +22,7 @@ DNS 是对IP地址和域名进行相互转换的系统，其核心是 DNS 服务
 
 #### 8.2.1 程序中有必要使用域名吗？
 
-一句话，需要，因为IP地址可能经常改变，而且也不容易记忆，通过域名可以随时更改解析，达到更换IP的目的
+一句话，需要，因为IP地址可能经常改变，而且也不容易记忆，通过域名可以随时更改解析，达到更换IP的目的。
 
 #### 8.2.2 利用域名获取IP地址
 
@@ -53,7 +53,7 @@ struct hostent
 
 - h_name：该变量中存有官方域名（Official domain name）。官方域名代表某一主页，但实际上，一些著名公司的域名并没有用官方域名注册。
 - h_aliases：可以通过多个域名访问同一主页。同一IP可以绑定多个域名，因此，除官方域名外还可以指定其他域名。这些信息可以通过 h_aliases 获得。
-- h_addrtype：gethostbyname 函数不仅支持 IPv4 还支持 IPv6。因此可以通过此变量获取保存在 h_addr_list 的IP地址族信息。若是 IPv4，则此变量中存有 AF_INET。
+- h_addrtype：该成员用于获取保存在 h_addr_list 中的地址族信息。若是 IPv4，则此变量中存有 AF_INET；若是 IPv6，则存有 AF_INET6。需要注意，gethostbyname 函数本身只返回 IPv4（AF_INET）地址，若需解析 IPv6 地址应改用 getaddrinfo 函数。
 - h_length：保存IP地址长度。若是 IPv4 地址，因为是 4 个字节，则保存 4；IPv6 时，因为是 16 个字节，故保存 16。
 - h_addr_list：这个是最重要的成员。通过此变量以整数形式保存域名相对应的IP地址。另外，用户比较多的网站有可能分配多个IP地址给同一个域名，利用多个服务器做负载均衡。此时可以通过此变量获取IP地址信息。
 
@@ -63,7 +63,7 @@ struct hostent
 
 下面的代码通过一个例子来演示 gethostbyname 的应用，并说明 hostent 结构体变量特性。
 
-- [gethostbyname.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch08/gethostbyname.c)
+- [gethostbyname.c](gethostbyname.c)
 
 编译运行：
 
@@ -78,11 +78,10 @@ gcc gethostbyname.c -o hostname
 
 如图所示，显示出了对百度的域名解析
 
-可以看出，百度有一个域名解析是 CNAME 解析的，指向了`shifen.com`，关于百度具体的解析过程。
+可以看出，百度的一个域名解析使用了 CNAME 记录，指向了 `shifen.com`。关于百度具体的解析过程，可参考下方资料。
 
 > 这一部分牵扯到了很多关于DNS解析的过程，还有 Linux 下关于域名解析的一些命令，我找了一部分资料，可以点下面的链接查看比较详细的：
 >
-> - [关于百度DNS的解析过程](http://zhan.renren.com/starshen?gid=3602888498023142484&checked=true)
 > - [DNS解析的过程是什么，求详细的？](https://www.zhihu.com/question/23042131/answer/66571369)
 > - [Linux DNS 查询剖析](https://zhuanlan.zhihu.com/p/45535596)
 > - [Linux DNS查询命令](http://www.live-in.org/archives/1938.html)
@@ -117,7 +116,7 @@ family: 传递地址族信息，IPv4 是 AF_INET，IPv6 是 AF_INET6。
 
 下面的代码演示使用方法：
 
-- [gethostbyaddr.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch08/gethostbyaddr.c)
+- [gethostbyaddr.c](gethostbyaddr.c)
 
 编译运行：
 

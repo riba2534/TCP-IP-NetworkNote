@@ -13,9 +13,7 @@ int main(int argc, char *argv[])
     int sock;
     char message[BUF_SIZE];
     int str_len;
-    socklen_t adr_sz; //多余变量
-
-    struct sockaddr_in serv_adr, from_adr; //不需要 from_adr
+    struct sockaddr_in serv_adr;
     if (argc != 3)
     {
         printf("Usage : %s <IP> <port>\n", argv[0]);

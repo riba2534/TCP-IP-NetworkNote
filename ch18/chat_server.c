@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 {
     int serv_sock, clnt_sock;
     struct sockaddr_in serv_adr, clnt_adr;
-    int clnt_adr_sz;
+    socklen_t clnt_adr_sz;
     pthread_t t_id;
     if (argc != 2)
     {
@@ -52,7 +52,10 @@ int main(int argc, char *argv[])
         clnt_socks[clnt_cnt++] = clnt_sock; //写入新连接
         pthread_mutex_unlock(&mutx);        //解锁
 
-        pthread_create(&t_id, NULL, handle_clnt, (void *)&clnt_sock);       //创建线程为新客户端服务，并且把clnt_sock作为参数传递
+        int *clnt_sock_ptr = malloc(sizeof(int));
+        *clnt_sock_ptr = clnt_sock;
+        pthread_create(&t_id, NULL, handle_clnt, (void *)clnt_sock_ptr);
+        // handle_clnt 中读取后需 free(arg)       //创建线程为新客户端服务，并且把clnt_sock作为参数传递
         pthread_detach(t_id);                                               //引导线程销毁，不阻塞
         printf("Connected client IP: %s \n", inet_ntoa(clnt_adr.sin_addr)); //客户端连接的ip地址
     }
@@ -63,6 +66,7 @@ int main(int argc, char *argv[])
 void *handle_clnt(void *arg)
 {
     int clnt_sock = *((int *)arg);
+    free(arg);
     int str_len = 0, i;
     char msg[BUF_SIZE];
 
@@ -74,8 +78,11 @@ void *handle_clnt(void *arg)
     {
         if (clnt_sock == clnt_socks[i])
         {
-            while (i++ < clnt_cnt - 1)
+            while (i < clnt_cnt - 1)
+            {
                 clnt_socks[i] = clnt_socks[i + 1];
+                i++;
+            }
             break;
         }
     }

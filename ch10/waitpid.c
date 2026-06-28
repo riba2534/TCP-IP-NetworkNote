@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        //调用waitpid 传递参数 WNOHANG ，这样之前有没有终止的子进程则返回0
+        // 调用 waitpid 传递参数 WNOHANG，这样如果没有终止的子进程则返回 0
         while (!waitpid(-1, &status, WNOHANG))
         {
             sleep(3);

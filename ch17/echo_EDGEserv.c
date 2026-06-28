@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 
     event.events = EPOLLIN; //需要读取数据的情况
     event.data.fd = serv_sock;
-    epoll_ctl(epfd, EPOLL_CTL_ADD, serv_sock, &event); //例程epfd 中添加文件描述符 serv_sock，目的是监听 enevt 中的事件
+    epoll_ctl(epfd, EPOLL_CTL_ADD, serv_sock, &event); //例程epfd 中添加文件描述符 serv_sock，目的是监听 event 中的事件
 
     while (1)
     {

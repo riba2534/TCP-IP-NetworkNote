@@ -15,8 +15,10 @@ int main()
         error_handling("open() error!");
     printf("file descriptor: %d \n", fd);
 
-    if (read(fd, buf, sizeof(buf)) == -1)
+    ssize_t read_cnt = read(fd, buf, sizeof(buf) - 1);
+    if (read_cnt == -1)
         error_handling("read() error!");
+    buf[read_cnt] = '\0';
     printf("file data: %s", buf);
     close(fd);
     return 0;

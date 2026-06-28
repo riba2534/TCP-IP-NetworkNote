@@ -6,7 +6,7 @@
 
 ### 3.1 分配给套接字的 IP 地址与端口号
 
-IP 是 Internet Protocol（网络协议）的简写，是为收发网络数据而分配给计算机的值。端口号并非赋予计算机的值，而是为了区分程序中创建的套接字而分配给套接字的序号。
+IP 是 Internet Protocol（网际协议）的简写，是为收发网络数据而分配给计算机的值。端口号并非赋予计算机的值，而是为了区分程序中创建的套接字而分配给套接字的序号。
 
 #### 3.1.1 网络地址（Internet Address）
 
@@ -47,7 +47,7 @@ IPv4 标准的 4 字节 IP 地址分为网络地址和主机（指计算机）�
 
 IP 地址用于区分计算机，只要有 IP 地址就能向目标主机传输数据，但是只有这些还不够，我们需要把信息传输给具体的应用程序。
 
-所以计算机一般有 NIC（网络接口卡）数据传输设备。通过 NIC 接收的数据内有端口号，操作系统参考端口号把信息传给相应的应用程序。
+所以计算机一般配有 NIC（网络接口卡）这一数据传输设备。通过 NIC 接收的数据内有端口号，操作系统参考端口号把信息传给相应的应用程序。
 
 端口号由 16 位构成，可分配的端口号范围是 0~65535。但是 0~1023 是知名端口，一般分配给特定的应用程序，所以应当分配给此范围之外的值。
 
@@ -103,7 +103,7 @@ struct in_addr
 
 - 成员 sin_family
 
-每种协议适用的地址族不同，比如，IPv4 使用 4 字节的地址族，IPv6 使用 16 字节的地址族。
+每种协议适用的地址族不同，比如，IPv4 使用 4 字节的地址，IPv6 使用 16 字节的地址。
 
 > 地址族
 
@@ -125,7 +125,7 @@ AF_LOCAL 只是为了说明具有多种地址族而添加的。
 
 - 成员 sin_zero
 
-  无特殊含义。只是为结构体 sockaddr_in 结构体变量地址值将以如下方式传递给 bind 函数。
+  无特殊含义。它的存在是为了让 sockaddr_in 结构体的大小与 sockaddr 结构体保持一致，以便 sockaddr_in 结构体变量的地址值能以如下方式传递给 bind 函数。
 
   在之前的代码中
 
@@ -144,7 +144,7 @@ AF_LOCAL 只是为了说明具有多种地址族而添加的。
   };
   ```
 
-  此结构体 sa_data 保存的地址信息中需要包含 IP 地址和端口号，剩余部分应该填充 0，但是这样对于包含地址的信息非常麻烦，所以出现了 sockaddr_in 结构体，然后强制转换成 sockaddr 类型，则生成符合 bind 条件的参数。
+  此结构体 sa_data 保存的地址信息中需要包含 IP 地址和端口号，剩余部分应该填充 0，但是这样手动填充地址信息非常麻烦，所以出现了 sockaddr_in 结构体，然后强制转换成 sockaddr 类型，则生成符合 bind 条件的参数。
 
 ### 3.3 网络字节序与地址变换
 
@@ -162,7 +162,7 @@ AF_LOCAL 只是为了说明具有多种地址族而添加的。
 00000001 00000000 00000000 00000000
 ```
 
-两种一种是顺序保存，一种是倒序保存。
+一种是顺序保存，一种是倒序保存。
 
 #### 3.3.1 字节序（Order）与网络字节序
 
@@ -178,7 +178,7 @@ CPU 保存数据的方式有两种，这意味着 CPU 解析数据的方式也�
 
 ![zijiexu.png](images/5c3aca956c8e9.png)
 
-因为这种原因，所以在通过网络传输数据时必须约定统一的方式，这种约定被称为网络字节序（Network Byte Order），非常简单，统一为大端序。即，先把数据数组转化成大端序格式再进行网络传输。
+因为这种原因，所以在通过网络传输数据时必须约定统一的方式，这种约定被称为网络字节序（Network Byte Order），非常简单，统一为大端序。即，先把数据转换成大端序格式再进行网络传输。
 
 #### 3.3.2 字节序转换
 
@@ -200,7 +200,7 @@ unsigned long ntohl(unsigned long);
 
 下面的代码是示例，说明以上函数调用过程：
 
-[endian_conv.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch03/endian_conv.c)
+[endian_conv.c](endian_conv.c)
 
 ```c
 #include <stdio.h>
@@ -240,7 +240,7 @@ Host ordered address: 0x12345678
 Network ordered address: 0x78563412
 ```
 
-这是在小端 CPU 的运行结果。大部分人会得到相同的结果，因为 Intel 和 AMD 的 CPU 都是小端序为标准。
+这是在小端 CPU 上的运行结果。大部分人会得到相同的结果，因为 Intel 和 AMD 的 CPU 都以小端序为标准。
 
 ### 3.4 网络地址的初始化与分配
 
@@ -256,7 +256,7 @@ in_addr_t inet_addr(const char *string);
 
 具体示例：
 
-[inet_addr.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch03/inet_addr.c)
+[inet_addr.c](inet_addr.c)
 
 ```c
 #include <stdio.h>
@@ -268,13 +268,13 @@ int main(int argc, char *argv[])
 
     unsigned long conv_addr = inet_addr(addr1);
     if (conv_addr == INADDR_NONE)
-        printf("Error occured! \n");
+        printf("Error occurred! \n");
     else
         printf("Network ordered integer addr: %#lx \n", conv_addr);
 
     conv_addr = inet_addr(addr2);
     if (conv_addr == INADDR_NONE)
-        printf("Error occured! \n");
+        printf("Error occurred! \n");
     else
         printf("Network ordered integer addr: %#lx \n", conv_addr);
     return 0;
@@ -292,7 +292,7 @@ gcc inet_addr.c -o addr
 
 ```
 Network ordered integer addr: 0x4030201
-Error occured!
+Error occurred!
 ```
 
 1 个字节能表示的最大整数是 255，所以代码中 addr2 是错误的 IP 地址。从运行结果看，inet_addr 不仅可以转换地址，还可以检测有效性。
@@ -311,7 +311,7 @@ addr: 保存转换结果的 in_addr 结构体变量的地址值
 
 函数调用示例：
 
-[inet_aton.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch03/inet_aton.c)
+[inet_aton.c](inet_aton.c)
 
 ```c
 #include <stdio.h>
@@ -366,7 +366,7 @@ char *inet_ntoa(struct in_addr adr);
 
 示例：
 
-[inet_ntoa.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch03/inet_ntoa.c)
+[inet_ntoa.c](inet_ntoa.c)
 
 ```c
 #include <stdio.h>
@@ -414,12 +414,12 @@ Dotted-Decimal notation3: 1.2.3.4
 
 ```c
 struct sockaddr_in addr;
-char *serv_ip = "211.217.168.13";          //声明IP地址族
+char *serv_ip = "211.217.168.13";          //声明IP地址字符串
 char *serv_port = "9190";                  //声明端口号字符串
 memset(&addr, 0, sizeof(addr));            //结构体变量 addr 的所有成员初始化为0
-addr.sin_family = AF_INET;                 //制定地址族
+addr.sin_family = AF_INET;                 //指定地址族
 addr.sin_addr.s_addr = inet_addr(serv_ip); //基于字符串的IP地址初始化
-addr.sin_port = htons(atoi(serv_port));    //基于字符串的IP地址端口号初始化
+addr.sin_port = htons(atoi(serv_port));    //基于字符串的端口号初始化
 ```
 
 ### 3.5 基于 Windows 的实现

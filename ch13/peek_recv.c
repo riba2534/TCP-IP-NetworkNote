@@ -39,6 +39,8 @@ int main(int argc, char *argv[])
         str_len = recv(recv_sock, buf, sizeof(buf) - 1, MSG_PEEK | MSG_DONTWAIT);
         if (str_len > 0)
             break;
+        if (str_len == 0)  // 对端关闭连接，避免死循环
+            error_handling("connect closed");
     }
 
     buf[str_len] = 0;

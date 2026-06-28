@@ -61,7 +61,10 @@ void * handle_clnt(void * arg)
 		pthread_mutex_lock(&mutx);
 		str_len = read(clnt_sock, buf, sizeof(buf));
 		if(str_len <= 0)
+		{
+			pthread_mutex_unlock(&mutx);
 			break;
+		}
 		else
 			write(clnt_sock, buf, str_len);
 		pthread_mutex_unlock(&mutx);

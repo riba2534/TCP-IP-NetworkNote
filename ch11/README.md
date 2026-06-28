@@ -2,7 +2,7 @@
 
 本章代码，在[TCP-IP-NetworkNote](https://github.com/riba2534/TCP-IP-NetworkNote)中可以找到。
 
-进程间通信，意味着两个不同的进程中可以交换数据
+进程间通信，意味着两个不同的进程之间可以交换数据。
 
 ### 11.1 进程间通信的基本概念
 
@@ -24,9 +24,9 @@ filedes[1]: 通过管道传输数据时使用的文件描述符，即管道入�
 */
 ```
 
-父进程调用函数时将创建管道，同时获取对应于出入口的文件描述符，此时父进程可以读写同一管道。但父进程的目的是与子进程进行数据交换，因此需要将入口或出口中的 1 个文件描述符传递给子进程。下面的例子是关于该函数的使用方法：
+父进程调用函数时将创建管道，同时获取对应于出入口的文件描述符，此时父进程可以读写同一管道。但父进程的目的是与子进程进行数据交换，因此需要通过 fork 让子进程继承这两个文件描述符，父子进程各自使用其中一端进行通信（实际编程中还应关闭各自不需要的一端）。下面的例子是关于该函数的使用方法：
 
-- [pipe1.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch11/pipe1.c)
+- [pipe1.c](pipe1.c)
 
 ```c
 #include <stdio.h>
@@ -80,7 +80,7 @@ Who are you?
 
 下面是双向通信的示例：
 
-- [pipe2.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch11/pipe2.c)
+- [pipe2.c](pipe2.c)
 
 ```c
 #include <stdio.h>
@@ -129,7 +129,7 @@ Parent proc output: Who are you?
 Child proc output: Thank you for your message
 ```
 
-运行结果是正确的，但是如果注释掉代码中子进程里的 `sleep(2);`（第18行），就会出现问题，导致一直等待下去。因为数据进入管道后变成了无主数据。也就是通过 read 函数先读取数据的进程将得到数据，即使该进程将数据传到了管道。因为，注释掉 `sleep(2);` 会产生问题。子进程可能读回自己向管道发送的数据。结果父进程调用 read 函数后，无限期等待数据进入管道。
+运行结果是正确的，但是如果注释掉代码中子进程里的 `sleep(2);`（第18行），就会出现问题，导致一直等待下去。因为数据进入管道后变成了无主数据。也就是通过 read 函数先读取数据的进程将得到数据，即使该进程将数据传到了管道。此时子进程可能在父进程读取前就把自己写入的数据读回，导致父进程的 read 调用无限期阻塞，等待永远不会到来的数据。
 
 当一个管道不满足需求时，就需要创建两个管道，各自负责不同的数据流动，过程如下图所示：
 
@@ -137,7 +137,7 @@ Child proc output: Thank you for your message
 
 下面采用上述模型改进 `pipe2.c` 。
 
-- [pipe3.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch11/pipe3.c)
+- [pipe3.c](pipe3.c)
 
 ```c
 #include <stdio.h>
@@ -176,13 +176,13 @@ int main(int argc, char *argv[])
 
 #### 11.2.1 保存消息的回声服务器
 
-下面对第 10 章的 [echo_mpserv.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch10/echo_mpserv.c) 进行改进，添加一个功能：
+下面对第 10 章的 [echo_mpserv.c](../ch10/echo_mpserv.c) 进行改进，添加一个功能：
 
 > 将回声客户端传输的字符串按序保存到文件中
 
 实现该任务将创建一个新进程，从向客户端提供服务的进程读取字符串信息，下面是代码：
 
-- [echo_storeserv.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch11/echo_storeserv.c)
+- [echo_storeserv.c](echo_storeserv.c)
 
 编译运行：
 
@@ -191,13 +191,13 @@ gcc echo_storeserv.c -o serv
 ./serv 9190
 ```
 
-此服务端配合第 10 章的客户端 [echo_mpclient.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch10/echo_mpclient.c) 使用，运行结果如下图:
+此服务端配合第 10 章的客户端 [echo_mpclient.c](../ch10/echo_mpclient.c) 使用，运行结果如下图：
 
 ![](images/kFUCct.png)
 
 ![](images/kFUAHS.png)
 
-从图上可以看出，服务端已经生成了文件，把客户端的消息保存了下来，只保存了10次消息。
+从图上可以看出，服务端已经生成了文件，把客户端的消息保存了下来，只保存了 10 条消息（代码中固定循环读取 10 次）。
 
 ### 11.3 习题
 

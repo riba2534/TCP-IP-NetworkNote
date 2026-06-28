@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
         error_handling("bind() error");
     while (1)
     {
-        //通过 recvfrom 函数接受数据。如果不需要知道传输数据的主机地址信息，可以向recvfrom函数的第5 6参数分贝传入 NULL 0
+        //通过 recvfrom 函数接收数据。如果不需要知道传输数据的主机地址信息，可以向 recvfrom 函数的第 5、6 个参数分别传入 NULL、0
         str_len = recvfrom(recv_sock, buf, BUF_SIZE - 1, 0, NULL, 0);
         if (str_len < 0)
             break;

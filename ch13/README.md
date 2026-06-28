@@ -13,7 +13,7 @@
 ssize_t send(int sockfd, const void *buf, size_t nbytes, int flags);
 /*
 成功时返回发送的字节数，失败时返回 -1
-sockfd: 表示与数据传输对象的连接的套接字和文件描述符
+sockfd: 表示与数据传输对象连接的套接字文件描述符
 buf: 保存待传输数据的缓冲地址值
 nbytes: 待传输字节数
 flags: 传输数据时指定的可选项信息
@@ -50,8 +50,8 @@ send & recv 函数的可选项意义：
 
 MSG_OOB 可选项用于创建特殊发送方法和通道以发送紧急消息。下面为 MSG_OOB 的示例代码：
 
-- [oob_recv.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch13/oob_recv.c)
-- [oob_send.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch13/oob_send.c)
+- [oob_recv.c](oob_recv.c)
+- [oob_send.c](oob_send.c)
 
 编译运行：
 
@@ -76,7 +76,7 @@ fcntl(recv_sock, F_SETOWN, getpid());
 
 的意思是：
 
-> 文件描述符 recv_sock 指向的套接字引发的 SIGURG 信号处理进程变为 getpid 函数返回值用作 ID 进程.
+> 将文件描述符 recv_sock 指向的套接字引发 SIGURG 信号时的处理进程，设置为以 getpid 函数返回值作为 ID 的进程。
 
 上述描述中的「处理 SIGURG 信号」指的是「调用 SIGURG 信号处理函数」。但是之前讲过，多个进程可以拥有 1 个套接字的文件描述符。例如，通过调用 fork 函数创建子进程并同时复制文件描述符。此时如果发生 SIGURG 信号，应该调用哪个进程的信号处理函数呢？可以肯定的是，不会调用所有进程的信号处理函数。因此，处理 SIGURG 信号时必须指定处理信号所用的进程，而 getpid 返回的是调用此函数的进程 ID 。上述调用语句指当前为处理 SIGURG 信号的主体。
 
@@ -84,7 +84,7 @@ fcntl(recv_sock, F_SETOWN, getpid());
 
 > 通过 MSG_OOB 可选项传递数据时只返回 1 个字节，而且也不快
 
-的确，通过 MSG_OOB 并不会加快传输速度，而通过信号处理函数 urg_handler 也只能读取一个字节。剩余数据只能通过未设置 MSG_OOB 可选项的普通输入函数读取。因为 TCP 不存在真正意义上的「外带数据」。实际上，MSG_OOB 中的 OOB 指的是 Out-of-band ，而「外带数据」的含义是：
+的确，通过 MSG_OOB 并不会加快传输速度，而通过信号处理函数 urg_handler 也只能读取一个字节。剩余数据只能通过未设置 MSG_OOB 可选项的普通输入函数读取。因为 TCP 不存在真正意义上的「带外数据」。实际上，MSG_OOB 中的 OOB 指的是 Out-of-band ，而「带外数据」的含义是：
 
 > 通过完全不同的通信路径传输的数据
 
@@ -102,7 +102,7 @@ MSG_OOB 的真正意义在于督促数据接收对象尽快处理数据。这是
 send(sock, "890", strlen("890"), MSG_OOB);
 ```
 
-图上是调用这个函数的缓冲状态。如果缓冲最左端的位置视作偏移量 0 。字符 0 保存于偏移量 2 的位置。另外，字符 0 右侧偏移量为 3 的位置存有紧急指针（Urgent Pointer）。紧急指针指向紧急消息的下一个位置（偏移量加一），同时向对方主机传递以下信息：
+图上是调用这个函数的缓冲状态。如果将缓冲最左端的位置视作偏移量 0，字符 '0' 保存于偏移量 2 的位置。另外，字符 '0' 右侧偏移量为 3 的位置即为紧急指针（Urgent Pointer）所指向的位置。紧急指针指向紧急消息的下一个位置（偏移量加一），同时向对方主机传递以下信息：
 
 > 紧急指针指向的偏移量为 3 之前的部分就是紧急消息。
 
@@ -117,14 +117,14 @@ TCP 数据包实际包含更多信息。TCP 头部包含如下两种信息：
 
 指定 MSG_OOB 选项的数据包本身就是紧急数据包，并通过紧急指针表示紧急消息所在的位置。
 
-紧急消息的意义在于督促消息处理，而非紧急传输形式受限的信息。
+紧急消息的意义在于督促接收方尽快处理数据，而非指紧急传输的信息本身在形式上受限。
 
 #### 13.1.4 检查输入缓冲
 
 同时设置 MSG_PEEK 选项和 MSG_DONTWAIT 选项，以验证输入缓冲是否存在接收的数据。设置 MSG_PEEK 选项并调用 recv 函数时，即使读取了输入缓冲的数据也不会删除。因此，该选项通常与 MSG_DONTWAIT 配合，用于以非阻塞方式验证待读数据存在与否。下面的示例是二者的含义：
 
-- [peek_recv.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch13/peek_recv.c)
-- [peek_send.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch13/peek_send.c)
+- [peek_recv.c](peek_recv.c)
+- [peek_send.c](peek_send.c)
 
 编译运行：
 
@@ -149,14 +149,14 @@ readv & writev 函数的功能可概括如下：
 
 > 对数据进行整合传输及发送的函数
 
-也就是说，通过 writev 函数可以将分散保存在多个缓冲中的数据一并发送，通过 readv 函数可以由多个缓冲分别接收。因此，适用这 2 个函数可以减少 I/O 函数的调用次数。下面先介绍 writev 函数。
+也就是说，通过 writev 函数可以将分散保存在多个缓冲中的数据一并发送，通过 readv 函数可以由多个缓冲分别接收。因此，使用这 2 个函数可以减少 I/O 函数的调用次数。下面先介绍 writev 函数。
 
 ```c
 #include <sys/uio.h>
 ssize_t writev(int filedes, const struct iovec *iov, int iovcnt);
 /*
 成功时返回发送的字节数，失败时返回 -1
-filedes: 表示数据传输对象的套接字文件描述符。但该函数并不仅限于套接字，因此，可以像 read 一样向其传递文件或标准输出描述符.
+filedes: 表示数据传输对象的套接字文件描述符。但该函数并不仅限于套接字，因此，可以像 read 一样向其传递文件或标准输出描述符。
 iov: iovec 结构体数组的地址值，结构体 iovec 中包含待发送数据的位置和大小信息
 iovcnt: 向第二个参数传递数组长度
 */
@@ -176,11 +176,11 @@ struct iovec
 
 ![](images/5c4c61b07d207.png)
 
-writev 的第一个参数，是文件描述符，因此向控制台输出数据，ptr 是存有待发送数据信息的 iovec 数组指针。第三个参数为 2，因此，从 ptr 指向的地址开始，共浏览 2 个 iovec 结构体变量，发送这些指针指向的缓冲数据。
+writev 的第一个参数是文件描述符，本例中传入 1（标准输出），因此数据会输出到控制台。ptr 是存有待发送数据信息的 iovec 数组指针；第三个参数为 2，表示从 ptr 指向的地址开始，共读取 2 个 iovec 结构体变量，并将这些指针指向的缓冲数据一并发送。
 
 下面是 writev 函数的使用方法：
 
-- [writev.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch13/writev.c)
+- [writev.c](writev.c)
 
 ```c
 #include <stdio.h>
@@ -218,14 +218,14 @@ ABC1234
 Write bytes: 7
 ```
 
-下面介绍 readv 函数，功能和 writev 函数正好相反.函数为：
+下面介绍 readv 函数，功能和 writev 函数正好相反。函数为：
 
 ```c
 #include <sys/uio.h>
 ssize_t readv(int filedes, const struct iovec *iov, int iovcnt);
 /*
 成功时返回接收的字节数，失败时返回 -1
-filedes: 表示数据传输对象的套接字文件描述符。但该函数并不仅限于套接字，因此，可以像 write 一样向其传递文件或标准输出描述符.
+filedes: 表示数据传输对象的套接字文件描述符。但该函数并不仅限于套接字，因此，可以像 write 一样向其传递文件或标准输出描述符。
 iov: iovec 结构体数组的地址值，结构体 iovec 中包含待数据保存的位置和大小信息
 iovcnt: 第二个参数中数组的长度
 */
@@ -233,7 +233,7 @@ iovcnt: 第二个参数中数组的长度
 
 下面是示例代码：
 
-- [readv.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch13/readv.c)
+- [readv.c](readv.c)
 
 ```c
 #include <stdio.h>
@@ -280,7 +280,7 @@ gcc readv.c -o rv
 
 #### 13.2.2 合理使用 readv & writev 函数
 
-实际上，能使用该函数的所有情况都适用。例如，需要传输的数据分别位于不同缓冲（数组）时，需要多次调用 write 函数。此时可通过 1 次 writev 函数调用替代操作，当然会提高效率。同样，需要将输入缓冲中的数据读入不同位置时，可以不必多次调用 read 函数，而是利用 1 次 readv 函数就能大大提高效率。
+实际上，凡是适合使用 readv/writev 的场景，都建议使用它们。例如，需要传输的数据分别位于不同缓冲（数组）时，需要多次调用 write 函数。此时可通过 1 次 writev 函数调用替代操作，当然会提高效率。同样，需要将输入缓冲中的数据读入不同位置时，可以不必多次调用 read 函数，而是利用 1 次 readv 函数就能大大提高效率。
 
 其意义在于减少数据包个数。假设为了提高效率在服务器端明确禁用了 Nagle 算法。其实 writev 函数在不采用 Nagle 算法时更有价值，如图：
 
@@ -348,11 +348,11 @@ ioctlsocket(sock, FIONBIO, &mode);
 
 1. **下列关于 MSG_OOB 可选项的说法错误的是**？
 
-   答：以下加粗的字体代表说法正确。
+   答：以下加粗的字体代表说法正确。说法错误的是第 2、3 项。
 
-   1. MSG_OOB 指传输 Out-of-band 数据，是通过其他路径高速传输数据
+   1. **MSG_OOB 指传输 Out-of-band 数据，是通过其他路径高速传输数据**
    2. MSG_OOB 指通过其他路径高速传输数据，因此 TCP 中设置该选项的数据先到达对方主机
-   3. **设置 MSG_OOB 是数据先到达对方主机后，以普通数据的形式和顺序读取。也就是说，只是提高了传输速度，接收方无法识别这一点**。
+   3. 设置 MSG_OOB 是数据先到达对方主机后，以普通数据的形式和顺序读取。也就是说，只是提高了传输速度，接收方无法识别这一点。
    4. **MSG_OOB 无法脱离 TCP 的默认数据传输方式，即使脱离了 MSG_OOB ，也会保持原有的传输顺序。该选项只用于要求接收方紧急处理**。
 
 2. **利用 readv & writev 函数收发数据有何优点？分别从函数调用次数和 I/O 缓冲的角度给出说明**。

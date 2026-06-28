@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
 	scanf("%s", file_name);
     //打开文件名
 	fp=fopen(file_name, "wb");
+	if(fp==NULL) error_handling("fopen() error");
     
     //创建套接字
 	sd=socket(PF_INET, SOCK_STREAM, 0);  
@@ -37,7 +38,8 @@ int main(int argc, char *argv[])
 	serv_adr.sin_addr.s_addr=inet_addr(argv[1]);
 	serv_adr.sin_port=htons(atoi(argv[2]));
 
-	connect(sd, (struct sockaddr*)&serv_adr, sizeof(serv_adr));
+	if(connect(sd, (struct sockaddr*)&serv_adr, sizeof(serv_adr))==-1)
+		error_handling("connect() error");
     //写入要传输的文件
 	write(sd, file_name, strlen(file_name)+1);	
 

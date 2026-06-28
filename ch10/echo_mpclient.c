@@ -44,8 +44,8 @@ void read_routine(int sock, char *buf)
 {
     while (1)
     {
-        int str_len = read(sock, buf, BUF_SIZE);
-        if (str_len == 0)
+        int str_len = read(sock, buf, BUF_SIZE - 1);
+        if (str_len <= 0)
             return;
 
         buf[str_len] = 0;
@@ -59,7 +59,7 @@ void write_routine(int sock, char *buf)
         fgets(buf, BUF_SIZE, stdin);
         if (!strcmp(buf, "q\n") || !strcmp(buf, "Q\n"))
         {
-            shutdown(sock, SHUT_WR); //向服务器端传递 EOF,因为fork函数复制了文件描述度，所以通过1次close调用不够
+            shutdown(sock, SHUT_WR); //向服务器端传递 EOF，因为 fork 函数复制了文件描述符，所以通过 1 次 close 调用不够
             return;
         }
         write(sock, buf, strlen(buf));

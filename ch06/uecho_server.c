@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     //创建 UDP 套接字后，向 socket 的第二个参数传递 SOCK_DGRAM
     serv_sock = socket(PF_INET, SOCK_DGRAM, 0);
     if (serv_sock == -1)
-        error_handling("UDP socket creation eerror");
+        error_handling("UDP socket creation error");
 
     memset(&serv_adr, 0, sizeof(serv_adr));
     serv_adr.sin_family = AF_INET;

@@ -8,7 +8,7 @@
 #define BUF_SIZE 10240
 void error_handling(char *message);
 
-char res[10];
+char res[16];
 char *calc(char *s)
 {
     int len = strlen(s), i;
@@ -93,7 +93,10 @@ int main(int argc, char *argv[])
     if (clnt_sock == -1)
         error_handling("accept() error");
     str_len = read(clnt_sock, message, BUF_SIZE);
-    write(clnt_sock, calc(message), str_len);
+    if (str_len == -1) error_handling("read() error");
+    message[str_len] = 0;
+    char *result_str = calc(message);
+    write(clnt_sock, result_str, strlen(result_str));
     close(clnt_sock);
     close(serv_sock);
     return 0;

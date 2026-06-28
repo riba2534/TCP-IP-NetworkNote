@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
 {
     int fds1[2], fds2[2];
     //const char* 以"\0"作为结束符
-    char str1[] = "Do you like cooffee?";
+    char str1[] = "Do you like coffee?";
     char str2[] = "I like coffee";
     char str3[] = "I like long legs";
     char * str_arr[] = {str1, str2, str3};

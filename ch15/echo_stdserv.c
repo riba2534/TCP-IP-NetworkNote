@@ -52,15 +52,13 @@ int main(int argc, char *argv[])
 
         readfp = fdopen(clnt_sock, "r");
         writefp = fdopen(clnt_sock, "w");
-        while (!feof(readfp))
+        while (fgets(message, BUF_SIZE, readfp) != NULL)
         {
-            fgets(message, BUF_SIZE, readfp);
             fputs(message, writefp);
             fflush(writefp);
         }
 
-        fclose(readfp);
-        fclose(writefp);
+        fclose(writefp);  /* readfp/writefp 共享同一 fd，关闭一次即可；半关闭见第 16 章 dup 方案 */
     }
     close(serv_sock);
     return 0;

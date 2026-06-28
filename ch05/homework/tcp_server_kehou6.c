@@ -54,9 +54,8 @@ int main(int argc, char *argv[])
 			}
 			write(clnt_sd, buf, BUF_SIZE);
 		}
+		fclose(fp);
 	}
-	
-	fclose(fp);
 	close(clnt_sd); close(serv_sd);
 	return 0;
 }

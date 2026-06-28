@@ -15,7 +15,7 @@
 
 ![](images/5c500e53ad9aa.png)
 
-假设使用 fputs 函数进行传输字符串 「Hello」时，首先将数据传递到标准 I/O 缓冲，然后将数据移动到套接字输出缓冲，最后将字符串发送到对方主机。
+假设使用 fputs 函数传输字符串「Hello」时，首先将数据传递到标准 I/O 缓冲，然后将数据移动到套接字输出缓冲，最后将字符串发送到对方主机。
 
 设置缓冲的主要目的是为了提高性能。从以下两点可以说明性能的提高：
 
@@ -31,13 +31,13 @@
 
 下面是利用系统函数的示例：
 
-- [syscpy.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch15/syscpy.c)
+- [syscpy.c](syscpy.c)
 
 下面是使用标准 I/O 函数复制文件
 
-- [stdcpy.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch15/stdcpy.c)
+- [stdcpy.c](stdcpy.c)
 
-对于以上两个代码进行测试，明显基于标准 I/O 函数的代码跑的更快。这是因为标准 I/O 函数通过缓冲区减少了系统调用的次数，每次系统调用都有一定的开销（用户态与内核态的切换），而缓冲机制可以将多次小数据量的 I/O 操作合并为较少次数的系统调用，从而提高性能。
+对于以上两个代码进行测试，明显基于标准 I/O 函数的代码跑得更快。这是因为标准 I/O 函数通过缓冲区减少了系统调用的次数，每次系统调用都有一定的开销（用户态与内核态的切换），而缓冲机制可以将多次小数据量的 I/O 操作合并为较少次数的系统调用，从而提高性能。
 
 #### 15.1.3 标准 I/O 函数的几个缺点
 
@@ -45,7 +45,7 @@
 
 - 不容易进行双向通信
 - 有时可能频繁调用 fflush 函数
-- 需要以 FILE 结构体指针的形式返回文件描述符。
+- 需要将文件描述符转换为 FILE 结构体指针才能使用。
 
 ### 15.2 使用标准 I/O 函数
 
@@ -65,7 +65,7 @@ mode ： 将要创建的 FILE 结构体指针的模式信息
 
 以下为示例：
 
-- [desto.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch15/desto.c)
+- [desto.c](desto.c)
 
 ```c
 #include <stdio.h>
@@ -115,7 +115,7 @@ int fileno(FILE *stream);
 
 示例：
 
-- [todes.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch15/todes.c)
+- [todes.c](todes.c)
 
 ```c
 #include <stdio.h>
@@ -146,8 +146,8 @@ int main()
 
 代码如下：
 
-- [echo_client.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch15/echo_client.c)
-- [echo_stdserv.c](https://github.com/riba2534/TCP-IP-NetworkNote/blob/master/ch15/echo_stdserv.c)
+- [echo_client.c](echo_client.c)
+- [echo_stdserv.c](echo_stdserv.c)
 
 编译运行：
 
@@ -166,7 +166,7 @@ gcc echo_stdserv.c -o eserver
 
 > 以下答案仅代表本人个人观点，可能不是正确答案。
 
-1. **请说明标准 I/O 的 2 个优点。他为何拥有这 2 个优点？**
+1. **请说明标准 I/O 的 2 个优点。它为何拥有这 2 个优点？**
 
    答：①具有很高的移植性②有良好的缓冲提高性能。
 

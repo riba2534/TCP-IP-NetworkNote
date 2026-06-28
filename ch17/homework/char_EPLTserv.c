@@ -86,12 +86,13 @@ int main(int argc, char *argv[])
                     close(ep_events[i].data.fd);
                     printf("closed client: %d \n", ep_events[i].data.fd);
 
-                    for(i = 0; i < clnt_cnt; ++i)
+                    int target_fd = ep_events[i].data.fd;
+                    for(int j = 0; j < clnt_cnt; ++j)
                     {
-                        if(clnt_sock == clnt_socks[i])
+                        if(target_fd == clnt_socks[j])
                         {
-                            while(i++ < clnt_cnt - 1)
-                                clnt_socks[i] = clnt_socks[i + 1];
+                            while(j++ < clnt_cnt - 1)
+                                clnt_socks[j] = clnt_socks[j + 1];
                             break;
                         }
                     }

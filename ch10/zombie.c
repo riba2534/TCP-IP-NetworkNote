@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     }
 
     if (pid == 0)
-        puts("End child proess");
+        puts("End child process");
     else
         puts("End parent process");
     return 0;

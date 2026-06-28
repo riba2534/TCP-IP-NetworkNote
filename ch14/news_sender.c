@@ -31,9 +31,8 @@ int main(int argc, char *argv[])
     if ((fp = fopen("news.txt", "r")) == NULL)
         error_handling("fopen() error");
 
-    while (!feof(fp)) //如果文件没结束就返回0
+    while (fgets(buf, BUF_SIZE, fp) != NULL) //逐行读取，读到文件末尾返回 NULL
     {
-        fgets(buf, BUF_SIZE, fp);
         sendto(send_sock, buf, strlen(buf), 0, (struct sockaddr *)&mul_adr, sizeof(mul_adr));
         sleep(2);
     }

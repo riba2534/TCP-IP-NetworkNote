@@ -31,12 +31,12 @@ int main(int argc, char *argv[])
     //初始化结构体
     join_adr.imr_multiaddr.s_addr = inet_addr(argv[1]); //多播组地址
     join_adr.imr_interface.s_addr = htonl(INADDR_ANY);  //待加入的IP地址
-    //利用套接字选项 IP_ADD_MEMBERSHIP 加入多播组，完成了接受指定的多播组数据的所有准备
+    //利用套接字选项 IP_ADD_MEMBERSHIP 加入多播组，完成了接收指定的多播组数据的所有准备
     setsockopt(recv_sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (void *)&join_adr, sizeof(join_adr));
 
     while (1)
     {
-        //通过 recvfrom 函数接受多播数据。如果不需要知道传输数据的主机地址信息，可以向recvfrom函数的第5 6参数分贝传入 NULL 0
+        //通过 recvfrom 函数接收多播数据。如果不需要知道传输数据的主机地址信息，可以向 recvfrom 函数的第 5、6 个参数分别传入 NULL、0
         str_len = recvfrom(recv_sock, buf, BUF_SIZE - 1, 0, NULL, 0);
         if (str_len < 0)
             break;

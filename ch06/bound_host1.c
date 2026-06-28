@@ -38,6 +38,8 @@ int main(int argc, char *argv[])
         adr_sz = sizeof(your_adr);
         str_len = recvfrom(sock, message, BUF_SIZE, 0,
                            (struct sockaddr *)&your_adr, &adr_sz);
+        if (str_len == -1)
+            error_handling("recvfrom() error");
         printf("Message %d: %s \n", i + 1, message);
     }
     close(sock);

@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
         sendto(sock, message, strlen(message), 0,
                (struct sockaddr *)&serv_adr, sizeof(serv_adr));
         adr_sz = sizeof(from_adr);
-        str_len = recvfrom(sock, message, BUF_SIZE, 0,
+        str_len = recvfrom(sock, message, BUF_SIZE - 1, 0,
                            (struct sockaddr *)&from_adr, &adr_sz);
         message[str_len] = 0;
         printf("Message from server: %s", message);

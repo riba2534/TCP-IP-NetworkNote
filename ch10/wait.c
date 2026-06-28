@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
         else
         {
             printf("Child PID: %d \n", pid);
-            wait(&status);         //之间终止的子进程相关信息将被保存到 status 中，同时相关子进程被完全销毁
+            wait(&status);         //之前终止的子进程相关信息将被保存到 status 中，同时相关子进程被完全销毁
             if (WIFEXITED(status)) //通过 WIFEXITED 来验证子进程是否正常终止。如果正常终止，则调用 WEXITSTATUS 宏输出子进程返回值
                 printf("Child send one: %d \n", WEXITSTATUS(status));
 

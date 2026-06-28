@@ -59,6 +59,8 @@ int main(int argc, char *argv[])
                 {
                     adr_sz = sizeof(clnt_adr);
                     clnt_sock = accept(serv_sock, (struct sockaddr *)&clnt_adr, &adr_sz);
+                    if (clnt_sock == -1)
+                        continue;
 
                     FD_SET(clnt_sock, &reads); //注册一个clnt_sock
                     if (fd_max < clnt_sock)
@@ -68,7 +70,13 @@ int main(int argc, char *argv[])
                 else //不是服务端套接字时
                 {
                     str_len = read(i, buf, BUF_SIZE); //i指的是当前发起请求的客户端
-                    if (str_len == 0)
+                    if (str_len == -1)
+                    {
+                        FD_CLR(i, &reads);
+                        close(i);
+                        printf("closed client(read error): %d \n", i);
+                    }
+                    else if (str_len == 0)
                     {
                         FD_CLR(i, &reads);
                         close(i);

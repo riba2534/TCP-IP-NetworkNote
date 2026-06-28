@@ -39,6 +39,11 @@ int main(int argc, char *argv[])
             if (FD_ISSET(0, &temps)) //验证发生变化的值是否是标准输入端
             {
                 str_len = read(0, buf, BUF_SIZE);
+                if (str_len == -1)
+                {
+                    puts("read error!");
+                    continue;
+                }
                 buf[str_len] = 0;
                 printf("message from console: %s", buf);
             }

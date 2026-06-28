@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
     char temp[20];
     puts("请输入你要计算的数字个数:");
     scanf("%d", &n);
+    message[0] = '\0';
     sprintf(temp, "%d", n);
     strcat(temp, " ");
     strcat(message, temp);

@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
     char buf[BUF_SIZE];
     if (argc != 2)
     {
-        printf("Usgae : %s <port>\n", argv[0]);
+        printf("Usage : %s <port>\n", argv[0]);
         exit(1);
     }
     act.sa_handler = read_childproc; //防止僵尸进程
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
         if (pid == 0) //子进程运行区域,此部分向客户端提供回声服务
         {
             close(serv_sock); //关闭服务器套接字，因为从父进程传递到了子进程
-            while ((str_len = read(clnt_sock, buf, BUFSIZ)) != 0)
+            while ((str_len = read(clnt_sock, buf, BUF_SIZE)) != 0)
                 write(clnt_sock, buf, str_len);
 
             close(clnt_sock);
