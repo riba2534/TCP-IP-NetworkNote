@@ -16,15 +16,19 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-fund --no-audit
         working-directory: site
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
 
       - name: Build site
         run: npm run build
         working-directory: site
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
