@@ -1,18 +1,99 @@
-# 《TCP/IP网络编程》学习笔记
+# 《TCP/IP 网络编程》学习笔记
 
-:flags: 此仓库是我的《TCP/IP网络编程》学习笔记及具体代码实现，代码部分请参考本仓库对应章节文件夹下的代码。如果本笔记的内容对你有用，请点击一个 `star` ，转载请注明出处，谢谢。
+> 📘 韩国尹圣雨所著《TCP/IP 网络编程》的学习笔记与完整代码实现，涵盖 19 章理论与 96 个 C 语言示例。
 
-我的环境是：Ubuntu18.04 LTS
+🌐 **在线阅读**：[tcp.riba2534.cn](https://tcp.riba2534.cn) ｜ 💻 **源码仓库**：[GitHub](https://github.com/riba2534/TCP-IP-NetworkNote)
 
-编译器版本：`g++ (Ubuntu 7.3.0-27ubuntu1~18.04) 7.3.0` 和 `gcc (Ubuntu 7.3.0-27ubuntu1~18.04) 7.3.0`
+[![Website](https://img.shields.io/badge/在线阅读-tcp.riba2534.cn-06b6d4?style=flat-square&logo=GoogleChrome&logoColor=white)](https://tcp.riba2534.cn)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/riba2534/TCP-IP-NetworkNote)
+[![Chapters](https://img.shields.io/badge/章节-19-orange?style=flat-square)](https://tcp.riba2534.cn)
+[![C Examples](https://img.shields.io/badge/C%20示例-96-green?style=flat-square)](https://tcp.riba2534.cn)
 
-所以本笔记中只学习有关于 Linux 的部分。
+## 简介
 
-本项目在 GitHub 地址为：[TCP-IP-NetworkNote](https://github.com/riba2534/TCP-IP-NetworkNote)
+本仓库是我的《TCP/IP 网络编程》学习笔记及具体代码实现。笔记已制作为精美的电子书网站，支持在线阅读、源码查看与全文搜索，代码部分请参考本仓库对应章节文件夹下的代码。
 
-如果在阅读本笔记的过程中发现错别字，及 bug ，请向本项目提交 `PR`.
+如果本笔记的内容对你有用，请点击一个 `star` ⭐，转载请注明出处，谢谢。
+
+## 在线阅读
+
+🌐 访问 **[tcp.riba2534.cn](https://tcp.riba2534.cn)** 即可在线阅读全部内容：
+
+- 📖 19 章完整笔记，中文衬线排版，阅读体验舒适
+- 💻 96 个 C 源码在线查看，GitHub 风格语法高亮
+- 🔍 全文搜索，快速定位知识点
+- 📱 响应式布局，支持手机 / 平板 / 桌面
+
+## 目录
+
+- [第 1 章 理解网络编程和套接字](https://tcp.riba2534.cn/ch01/)
+- [第 2 章 套接字类型与协议设置](https://tcp.riba2534.cn/ch02/)
+- [第 3 章 地址族与数据序列](https://tcp.riba2534.cn/ch03/)
+- [第 4 章 基于 TCP 的服务端/客户端（1）](https://tcp.riba2534.cn/ch04/)
+- [第 5 章 基于 TCP 的服务端/客户端（2）](https://tcp.riba2534.cn/ch05/)
+- [第 6 章 基于 UDP 的服务端/客户端](https://tcp.riba2534.cn/ch06/)
+- [第 7 章 优雅地断开套接字的连接](https://tcp.riba2534.cn/ch07/)
+- [第 8 章 域名及网络地址](https://tcp.riba2534.cn/ch08/)
+- [第 9 章 套接字的多种可选项](https://tcp.riba2534.cn/ch09/)
+- [第 10 章 多进程服务器端](https://tcp.riba2534.cn/ch10/)
+- [第 11 章 进程间通信](https://tcp.riba2534.cn/ch11/)
+- [第 12 章 I/O 复用](https://tcp.riba2534.cn/ch12/)
+- [第 13 章 多种 I/O 函数](https://tcp.riba2534.cn/ch13/)
+- [第 14 章 多播与广播](https://tcp.riba2534.cn/ch14/)
+- [第 15 章 套接字和标准 I/O](https://tcp.riba2534.cn/ch15/)
+- [第 16 章 关于 I/O 流分离的其他内容](https://tcp.riba2534.cn/ch16/)
+- [第 17 章 优于 select 的 epoll](https://tcp.riba2534.cn/ch17/)
+- [第 18 章 多线程服务器端的实现](https://tcp.riba2534.cn/ch18/)
+- [第 24 章 制作 HTTP 服务器端](https://tcp.riba2534.cn/ch24/)
+
+## 本地运行
+
+> 开发环境：Ubuntu 18.04 LTS，`gcc (Ubuntu 7.3.0) 7.3.0` / `g++ (Ubuntu 7.3.0) 7.3.0`。本笔记只涉及 Linux 部分。
+
+编译运行示例代码：
+
+```bash
+# 编译服务端示例
+gcc hello_server.c -o hserver
+
+# 编译客户端示例
+gcc hello_client.c -o hclient
+
+# 运行服务端（需要端口号参数）
+./hserver 9190
+
+# 运行客户端（需要 IP 地址和端口号）
+./hclient 127.0.0.1 9190
+```
+
+多线程示例（第 18 章）需要链接 pthread 库：
+
+```bash
+gcc thread1.c -o tr1 -lpthread
+```
+
+## 本地预览网站
+
+如需在本地预览电子书网站：
+
+```bash
+cd site
+npm install        # 安装 VitePress 依赖
+npm run dev        # 启动开发服务器，访问 http://localhost:5173
+# 或
+npm run build      # 构建静态站点到 site/.vitepress/dist
+```
+
+## 贡献
+
+如果在阅读本笔记的过程中发现错别字或 bug，欢迎向本项目提交 `PR` 或 `Issue`。
 
 笔记的 PDF 版本可以在本项目 [releases](https://github.com/riba2534/TCP-IP-NetworkNote/releases) 中找到及下载。
+
+## 许可
+
+本笔记内容仅供学习交流，转载请注明出处。代码示例随原书仅供学习使用。
+
 
 
 
